@@ -212,7 +212,7 @@ export default function AdminDashboard() {
         <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: { xs: 3, md: 4 } }} alignItems="stretch">
 
           {/* Transaction Volume */}
-          <Grid item xs={12} lg={8} sx={{ display: 'flex' }}>
+          <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }} style={{ flex: 1 }}>
               <Card sx={{ height: '100%', boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -263,7 +263,7 @@ export default function AdminDashboard() {
           </Grid>
 
           {/* Service Mix — same height */}
-          <Grid item xs={12} lg={4} sx={{ display: 'flex' }}>
+          <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} style={{ flex: 1 }}>
               <Card sx={{ height: '100%', boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
         <Grid container spacing={{ xs: 2, md: 3 }}>
 
           {/* Recent transactions */}
-          <Grid item xs={12} xl={8}>
+          <Grid item xs={12} lg={8}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.42 }}>
               <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7' }}>
                 <Box sx={{ px: 3, py: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EEF2F7' }}>
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
           </Grid>
 
           {/* Recent users */}
-          <Grid item xs={12} xl={4}>
+          <Grid item xs={12} lg={4}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48 }}>
               <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7', height: '100%' }}>
                 <Box sx={{ px: 3, py: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EEF2F7' }}>

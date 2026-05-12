@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Box, Typography, Button, Container, Chip, Stack } from '@mui/material'
+import { useAuth } from '../../context/AuthContext'
 import { motion } from 'framer-motion'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import VerifiedIcon from '@mui/icons-material/Verified'
@@ -20,6 +21,13 @@ const heroServices = [
 
 export default function Hero() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const dashboardPath = user?.roles?.[0]?.name === 'admin'
+    ? '/admin/dashboard'
+    : user?.roles?.[0]?.name === 'staff'
+    ? '/staff/dashboard'
+    : '/portal/dashboard'
 
   return (
     <Box sx={{
@@ -75,10 +83,10 @@ export default function Hero() {
                 <Button
                   variant="contained" color="secondary" size="large"
                   endIcon={<ArrowForwardIcon />}
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate(user ? dashboardPath : '/register')}
                   sx={{ fontSize: '1rem', py: 1.5, px: 4, fontWeight: 700 }}
                 >
-                  Start Your Transaction
+                  {user ? 'Go to Dashboard' : 'Start Your Transaction'}
                 </Button>
                 <Button
                   variant="outlined" size="large"

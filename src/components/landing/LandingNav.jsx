@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AppBar, Toolbar, Typography, Button, Box, Container, IconButton,
-  Drawer, List, ListItem, ListItemButton, ListItemText,
+  Drawer, List, ListItem, ListItemButton, ListItemText, Avatar,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import CloseIcon from '@mui/icons-material/Close'
+import DashboardIcon from '@mui/icons-material/Dashboard'
 import { motion } from 'framer-motion'
 import { NAVY, GOLD, GOLD_DARK } from '../../theme/theme'
+import { useAuth } from '../../context/AuthContext'
 
 const navLinks = [
   { label: 'Services', href: '#services' },
@@ -21,6 +23,13 @@ export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const navigate = useNavigate()
+  const { user } = useAuth()
+
+  const dashboardPath = user?.roles?.[0]?.name === 'admin'
+    ? '/admin/dashboard'
+    : user?.roles?.[0]?.name === 'staff'
+    ? '/staff/dashboard'
+    : '/portal/dashboard'
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 60)
@@ -98,45 +107,62 @@ export default function LandingNav() {
 
             <Box sx={{ width: 1, height: 22, bgcolor: 'rgba(255,255,255,0.18)', mx: 1.5 }} />
 
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate('/login')}
-                sx={{
-                  color: 'rgba(255,255,255,0.9)',
-                  borderColor: 'rgba(255,255,255,0.35)',
-                  borderWidth: '1.5px',
-                  mr: 1.5,
-                  px: 2.5,
-                  '&:hover': { borderColor: GOLD, color: GOLD, borderWidth: '1.5px', bgcolor: 'rgba(201,168,76,0.08)' },
-                }}
-              >
-                Login
-              </Button>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}>
-              <Button
-                variant="contained"
-                onClick={() => navigate('/register')}
-                sx={{
-                  background: `linear-gradient(135deg, #E8C96D 0%, ${GOLD} 50%, ${GOLD_DARK} 100%)`,
-                  color: NAVY,
-                  fontWeight: 700,
-                  px: 3,
-                  fontSize: '0.92rem',
-                  boxShadow: '0 4px 16px rgba(201,168,76,0.35)',
-                  '&:hover': {
-                    background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`,
-                    boxShadow: '0 6px 20px rgba(201,168,76,0.5)',
-                    transform: 'translateY(-1px)',
-                  },
-                  transition: 'all 0.2s ease',
-                }}
-              >
-                Get Started
-              </Button>
-            </motion.div>
+            {user ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
+                style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Avatar
+                  src={user.profile_picture_url || undefined}
+                  sx={{ width: 36, height: 36, bgcolor: GOLD, color: NAVY, fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', border: '2px solid rgba(255,255,255,0.2)' }}
+                  onClick={() => navigate(dashboardPath)}
+                >
+                  {!user.profile_picture_url && user.name?.charAt(0)}
+                </Avatar>
+                <Button
+                  variant="contained"
+                  startIcon={<DashboardIcon sx={{ fontSize: '1rem !important' }} />}
+                  onClick={() => navigate(dashboardPath)}
+                  sx={{
+                    background: `linear-gradient(135deg, #E8C96D 0%, ${GOLD} 50%, ${GOLD_DARK} 100%)`,
+                    color: NAVY, fontWeight: 700, px: 2.5, fontSize: '0.88rem',
+                    boxShadow: '0 4px 16px rgba(201,168,76,0.35)',
+                    '&:hover': { background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`, boxShadow: '0 6px 20px rgba(201,168,76,0.5)', transform: 'translateY(-1px)' },
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  Dashboard
+                </Button>
+              </motion.div>
+            ) : (
+              <>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={() => navigate('/login')}
+                    sx={{
+                      color: 'rgba(255,255,255,0.9)', borderColor: 'rgba(255,255,255,0.35)', borderWidth: '1.5px', mr: 1.5, px: 2.5,
+                      '&:hover': { borderColor: GOLD, color: GOLD, borderWidth: '1.5px', bgcolor: 'rgba(201,168,76,0.08)' },
+                    }}
+                  >
+                    Login
+                  </Button>
+                </motion.div>
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => navigate('/register')}
+                    sx={{
+                      background: `linear-gradient(135deg, #E8C96D 0%, ${GOLD} 50%, ${GOLD_DARK} 100%)`,
+                      color: NAVY, fontWeight: 700, px: 3, fontSize: '0.92rem',
+                      boxShadow: '0 4px 16px rgba(201,168,76,0.35)',
+                      '&:hover': { background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`, boxShadow: '0 6px 20px rgba(201,168,76,0.5)', transform: 'translateY(-1px)' },
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    Get Started
+                  </Button>
+                </motion.div>
+              </>
+            )}
           </Box>
 
           {/* Mobile hamburger */}

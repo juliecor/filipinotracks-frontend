@@ -18,6 +18,7 @@ import PeopleIcon from '@mui/icons-material/People'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import CampaignIcon from '@mui/icons-material/Campaign'
 import AssignmentIcon from '@mui/icons-material/Assignment'
+import HomeIcon from '@mui/icons-material/Home'
 import { useAuth } from '../../context/AuthContext'
 import { NAVY, GOLD } from '../../theme/theme'
 import api from '../../api/axios'
@@ -79,7 +80,7 @@ export default function PortalLayout({ role = 'client' }) {
 
   /* ─── Sidebar ─── */
   const SidebarContent = () => (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: NAVY, overflow: 'hidden' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#0F2444', overflow: 'hidden' }}>
 
       {/* Logo */}
       <Box sx={{
@@ -158,6 +159,35 @@ export default function PortalLayout({ role = 'client' }) {
         </List>
       </Box>
 
+      {/* Back to Home */}
+      <Box sx={{ px: 1, pb: 1 }}>
+        <Tooltip title={collapsed ? 'Back to Home' : ''} placement="right" arrow>
+          <ListItemButton
+            component={Link}
+            to="/"
+            sx={{
+              borderRadius: '10px',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              px: collapsed ? 1 : 1.5, py: 1.1,
+              bgcolor: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              '&:hover': { bgcolor: 'rgba(201,168,76,0.12)', borderColor: 'rgba(201,168,76,0.25)' },
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <ListItemIcon sx={{ color: 'rgba(255,255,255,0.6)', minWidth: collapsed ? 0 : 38, '& svg': { fontSize: 21 } }}>
+              <HomeIcon />
+            </ListItemIcon>
+            {!collapsed && (
+              <ListItemText
+                primary="Back to Home"
+                sx={{ '& .MuiListItemText-primary': { fontSize: '0.875rem', fontWeight: 500, color: 'rgba(255,255,255,0.7)' } }}
+              />
+            )}
+          </ListItemButton>
+        </Tooltip>
+      </Box>
+
       {/* User footer */}
       <Box sx={{ p: 1.5, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <Tooltip title={collapsed ? `${user?.name} — Logout` : ''} placement="right">
@@ -211,7 +241,7 @@ export default function PortalLayout({ role = 'client' }) {
       <Drawer
         variant="temporary" open={mobileOpen} onClose={() => setMobileOpen(false)}
         ModalProps={{ keepMounted: true }}
-        sx={{ display: { md: 'none' }, '& .MuiDrawer-paper': { width: DRAWER_WIDTH, bgcolor: NAVY, border: 'none' } }}
+        sx={{ display: { md: 'none' }, '& .MuiDrawer-paper': { width: DRAWER_WIDTH, bgcolor: '#0F2444', border: 'none' } }}
       >
         <SidebarContent />
       </Drawer>
@@ -276,6 +306,9 @@ export default function PortalLayout({ role = 'client' }) {
             <Typography variant="caption" sx={{ color: '#64748B' }}>{user?.email}</Typography>
           </Box>
           <Divider />
+          <MenuItem onClick={() => { setAnchorEl(null); navigate('/') }}>
+            <HomeIcon fontSize="small" sx={{ mr: 1.5, color: '#64748B' }} /> Back to Home
+          </MenuItem>
           <MenuItem onClick={() => { setAnchorEl(null); navigate(settingsPath) }}>
             <SettingsIcon fontSize="small" sx={{ mr: 1.5, color: '#64748B' }} /> Settings
           </MenuItem>
