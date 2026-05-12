@@ -120,7 +120,7 @@ export default function ClientDashboard() {
 
       {/* ═══ Hero ═══ */}
       <Box sx={{
-        background: `linear-gradient(140deg, ${NAVY} 0%, #0F2744 60%, #153250 100%)`,
+        background: `linear-gradient(140deg, #1A3A6E 0%, #1E4A88 60%, #245AA0 100%)`,
         px: { xs: 3, sm: 4, md: 5 },
         pt: { xs: 4, md: 5 },
         pb: { xs: 5, md: 6.5 },
@@ -298,7 +298,7 @@ export default function ClientDashboard() {
               {/* Help card */}
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                 <Card sx={{
-                  background: `linear-gradient(140deg, ${NAVY} 0%, #153250 100%)`,
+                  background: `linear-gradient(140deg, #1A3A6E 0%, #245AA0 100%)`,
                   border: 'none', boxShadow: `0 8px 32px ${NAVY}30`,
                 }}>
                   <CardContent sx={{ p: 3 }}>

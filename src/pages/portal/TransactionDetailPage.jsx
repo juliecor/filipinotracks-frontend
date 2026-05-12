@@ -118,7 +118,7 @@ export default function TransactionDetailPage() {
   if (loading) {
     return (
       <Box sx={{ minHeight: '100%', bgcolor: '#F4F6FA' }}>
-        <Box sx={{ background: `linear-gradient(140deg, ${NAVY} 0%, #153250 100%)`, px: { xs: 3, md: 5 }, pt: { xs: 4, md: 5 }, pb: 7 }}>
+        <Box sx={{ background: `linear-gradient(140deg, #1A3A6E 0%, #245AA0 100%)`, px: { xs: 3, md: 5 }, pt: { xs: 4, md: 5 }, pb: 7 }}>
           <Skeleton width={200} height={32} sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
         </Box>
         <Box sx={{ px: { xs: 3, md: 5 }, py: 4 }}>
@@ -147,7 +147,7 @@ export default function TransactionDetailPage() {
 
       {/* ═══ Hero header ═══ */}
       <Box sx={{
-        background: `linear-gradient(140deg, ${NAVY} 0%, #0F2744 55%, #153250 100%)`,
+        background: `linear-gradient(140deg, #1A3A6E 0%, #1E4A88 55%, #245AA0 100%)`,
         px: { xs: 3, sm: 4, md: 5 },
         pt: { xs: 3, md: 4 },
         pb: { xs: 5, md: 6 },

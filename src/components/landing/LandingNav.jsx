@@ -48,11 +48,11 @@ export default function LandingNav() {
       position="fixed"
       elevation={0}
       sx={{
-        backgroundColor: scrolled ? 'rgba(10,22,40,0.97)' : 'rgba(10,22,40,0.82)',
+        backgroundColor: scrolled ? 'rgba(255,255,255,0.98)' : 'rgba(255,255,255,0.92)',
         backdropFilter: 'blur(20px)',
-        borderBottom: `1px solid ${scrolled ? 'rgba(201,168,76,0.25)' : 'rgba(255,255,255,0.08)'}`,
+        borderBottom: `1px solid ${scrolled ? '#E8EDF5' : 'rgba(232,237,245,0.6)'}`,
         transition: 'all 0.3s ease',
-        boxShadow: scrolled ? '0 4px 24px rgba(0,0,0,0.25)' : 'none',
+        boxShadow: scrolled ? '0 2px 20px rgba(10,22,40,0.08)' : 'none',
         borderRadius: 0,
       }}
     >
@@ -74,7 +74,7 @@ export default function LandingNav() {
                 <Typography variant="h6" sx={{ color: NAVY, fontWeight: 900, fontSize: '1rem', lineHeight: 1 }}>FT</Typography>
               </Box>
               <Box>
-                <Typography variant="h6" sx={{ color: 'white', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-0.02em', fontSize: '1.05rem' }}>
+                <Typography variant="h6" sx={{ color: NAVY, fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.03em', fontSize: '1.75rem' }}>
                   FilipinoTracks
                 </Typography>
                 <Typography variant="caption" sx={{ color: GOLD, letterSpacing: '0.14em', fontSize: '0.58rem', fontWeight: 700 }}>
@@ -93,11 +93,11 @@ export default function LandingNav() {
                 <Button
                   onClick={() => scrollTo(link.href)}
                   sx={{
-                    color: 'rgba(255,255,255,0.88)',
+                    color: '#4A5568',
                     fontSize: '0.92rem',
                     px: 2,
                     fontWeight: 500,
-                    '&:hover': { color: GOLD, backgroundColor: 'rgba(201,168,76,0.1)' },
+                    '&:hover': { color: NAVY, backgroundColor: 'rgba(10,22,40,0.05)' },
                   }}
                 >
                   {link.label}
@@ -105,7 +105,7 @@ export default function LandingNav() {
               </motion.div>
             ))}
 
-            <Box sx={{ width: 1, height: 22, bgcolor: 'rgba(255,255,255,0.18)', mx: 1.5 }} />
+            <Box sx={{ width: 1, height: 22, bgcolor: 'rgba(10,22,40,0.12)', mx: 1.5 }} />
 
             {user ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
@@ -139,8 +139,8 @@ export default function LandingNav() {
                     variant="outlined"
                     onClick={() => navigate('/login')}
                     sx={{
-                      color: 'rgba(255,255,255,0.9)', borderColor: 'rgba(255,255,255,0.35)', borderWidth: '1.5px', mr: 1.5, px: 2.5,
-                      '&:hover': { borderColor: GOLD, color: GOLD, borderWidth: '1.5px', bgcolor: 'rgba(201,168,76,0.08)' },
+                      color: NAVY, borderColor: 'rgba(10,22,40,0.25)', borderWidth: '1.5px', mr: 1.5, px: 2.5,
+                      '&:hover': { borderColor: NAVY, color: NAVY, borderWidth: '1.5px', bgcolor: 'rgba(10,22,40,0.05)' },
                     }}
                   >
                     Login
@@ -167,7 +167,7 @@ export default function LandingNav() {
 
           {/* Mobile hamburger */}
           <IconButton
-            sx={{ display: { md: 'none' }, color: 'white', ml: 1 }}
+            sx={{ display: { md: 'none' }, color: NAVY, ml: 1 }}
             onClick={() => setDrawerOpen(true)}
           >
             <MenuIcon />
