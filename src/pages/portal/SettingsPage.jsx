@@ -4,12 +4,15 @@ import {
   Alert, CircularProgress, IconButton, Tooltip,
 } from '@mui/material'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import SaveIcon from '@mui/icons-material/Save'
 import LockIcon from '@mui/icons-material/Lock'
 import PersonIcon from '@mui/icons-material/Person'
 import SettingsIcon from '@mui/icons-material/Settings'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import DeleteIcon from '@mui/icons-material/Delete'
+import StarIcon from '@mui/icons-material/Star'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import api from '../../api/axios'
 import { NAVY, GOLD, GOLD_DARK } from '../../theme/theme'
 import { useAuth } from '../../context/AuthContext'
@@ -369,6 +372,39 @@ export default function SettingsPage() {
             </Box>
           </Card>
         </motion.div>
+
+        {/* ─── Review prompt (clients only) ─── */}
+        {roleLabel === 'client' && (
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <Card
+              component={Link}
+              to="/portal/review"
+              sx={{
+                mt: 3, p: 3, display: 'flex', alignItems: 'center', gap: 2,
+                textDecoration: 'none', cursor: 'pointer',
+                background: `linear-gradient(135deg, ${NAVY}06 0%, ${GOLD}08 100%)`,
+                border: `1px solid ${GOLD}30`,
+                boxShadow: '0 2px 12px rgba(10,22,40,0.07)',
+                transition: 'all 0.2s ease',
+                '&:hover': { boxShadow: `0 6px 24px ${GOLD}25`, borderColor: GOLD },
+              }}
+            >
+              <Box sx={{ width: 44, height: 44, borderRadius: '12px', bgcolor: `${GOLD}18`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <StarIcon sx={{ color: GOLD, fontSize: 22 }} />
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: NAVY }}>
+                  Write a Review
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>
+                  Share your experience — helps others choose FilipinoTracks
+                </Typography>
+              </Box>
+              <ArrowForwardIcon sx={{ color: GOLD, fontSize: 20 }} />
+            </Card>
+          </motion.div>
+        )}
 
       </Box>
     </Box>

@@ -19,6 +19,7 @@ import BarChartIcon from '@mui/icons-material/BarChart'
 import CampaignIcon from '@mui/icons-material/Campaign'
 import AssignmentIcon from '@mui/icons-material/Assignment'
 import HomeIcon from '@mui/icons-material/Home'
+import StarIcon from '@mui/icons-material/Star'
 import { useAuth } from '../../context/AuthContext'
 import { NAVY, GOLD } from '../../theme/theme'
 import api from '../../api/axios'
@@ -32,6 +33,7 @@ const clientNav = [
   { label: 'Upload Documents',path: '/portal/documents',      icon: <CloudUploadIcon /> },
   { label: 'Notifications',   path: '/portal/notifications',  icon: <NotificationsIcon />, notif: true },
   { label: 'Messages',        path: '/portal/messages',       icon: <ChatIcon /> },
+  { label: 'My Review',       path: '/portal/review',         icon: <StarIcon /> },
   { label: 'Settings',        path: '/portal/settings',       icon: <SettingsIcon /> },
 ]
 
@@ -41,6 +43,7 @@ const adminNav = [
   { label: 'Transactions', path: '/admin/transactions', icon: <ReceiptLongIcon /> },
   { label: 'Analytics',    path: '/admin/analytics',    icon: <BarChartIcon /> },
   { label: 'Announcements',path: '/admin/announcements',icon: <CampaignIcon /> },
+  { label: 'Testimonials', path: '/admin/testimonials', icon: <StarIcon /> },
   { label: 'Settings',     path: '/admin/settings',     icon: <SettingsIcon /> },
 ]
 

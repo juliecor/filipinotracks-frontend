@@ -14,12 +14,15 @@ import DocumentsPage from './pages/portal/DocumentsPage'
 import NotificationsPage from './pages/portal/NotificationsPage'
 import MessagesPage from './pages/portal/MessagesPage'
 import SettingsPage from './pages/portal/SettingsPage'
+import TestimonialPage from './pages/portal/TestimonialPage'
 
 // Admin portal pages
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminTransactionsPage from './pages/admin/AdminTransactionsPage'
 import AdminAnnouncementsPage from './pages/admin/AdminAnnouncementsPage'
+import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage'
+import AdminTestimonialsPage from './pages/admin/AdminTestimonialsPage'
 
 // Staff portal pages
 import StaffDashboard from './pages/staff/StaffDashboard'
@@ -65,6 +68,7 @@ function App() {
           <Route path="documents"           element={<DocumentsPage />} />
           <Route path="notifications"       element={<NotificationsPage />} />
           <Route path="messages"            element={<MessagesPage />} />
+          <Route path="review"              element={<TestimonialPage />} />
           <Route path="settings"            element={<SettingsPage />} />
         </Route>
 
@@ -76,8 +80,9 @@ function App() {
           <Route path="transactions"        element={<AdminTransactionsPage />} />
           <Route path="transactions/:id"    element={<TransactionDetailPage />} />
           <Route path="staff"               element={<AdminUsersPage />} />
-          <Route path="analytics"           element={<AdminDashboard />} />
+          <Route path="analytics"           element={<AdminAnalyticsPage />} />
           <Route path="announcements"       element={<AdminAnnouncementsPage />} />
+          <Route path="testimonials"        element={<AdminTestimonialsPage />} />
           <Route path="settings"            element={<SettingsPage />} />
         </Route>
 
