@@ -1,0 +1,116 @@
+import { Box, Container, Typography, Chip } from '@mui/material'
+import { motion } from 'framer-motion'
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser'
+import SpeedIcon from '@mui/icons-material/Speed'
+import TrackChangesIcon from '@mui/icons-material/TrackChanges'
+import HandshakeIcon from '@mui/icons-material/Handshake'
+import { NAVY, GOLD } from '../../theme/theme'
+
+const values = [
+  { icon: <VerifiedUserIcon sx={{ fontSize: 28 }} />, color: GOLD, title: 'Integrity', desc: 'Full transparency and strict adherence to Philippine property laws in every transaction.' },
+  { icon: <SpeedIcon sx={{ fontSize: 28 }} />, color: '#3B82F6', title: 'Efficiency', desc: 'Our digital platform cuts processing time significantly vs. traditional methods.' },
+  { icon: <TrackChangesIcon sx={{ fontSize: 28 }} />, color: '#22C55E', title: 'Accuracy', desc: 'Every document reviewed for compliance with LRA, BIR, and local government requirements.' },
+  { icon: <HandshakeIcon sx={{ fontSize: 28 }} />, color: '#8B5CF6', title: 'Trust', desc: 'Thousands of Filipinos — from first-time buyers to developers — rely on us daily.' },
+]
+
+export default function About() {
+  return (
+    <Box id="about" sx={{ bgcolor: '#F5F7FA' }}>
+
+      {/* Header band */}
+      <Box sx={{
+        background: `linear-gradient(135deg, ${NAVY} 0%, #0D2045 60%, #1E3A5F 100%)`,
+        py: { xs: 8, md: 10 },
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        <Box sx={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }} />
+        <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+          <Chip
+            label="ABOUT US"
+            sx={{ mb: 2.5, bgcolor: `${GOLD}22`, color: GOLD, fontWeight: 700, letterSpacing: '0.12em', fontSize: '0.7rem', border: `1px solid ${GOLD}44` }}
+          />
+          <Typography variant="h2" sx={{ color: 'white', mb: 2, fontSize: { xs: '1.9rem', md: '2.75rem' } }}>
+            The Philippines' Trusted
+            <Box component="span" sx={{ color: GOLD }}> Property Documentation</Box> Platform
+          </Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,0.65)', maxWidth: 560, mx: 'auto', lineHeight: 1.8, fontSize: '1.05rem' }}>
+            Simplifying land title and property document processing for every Filipino — fast, secure, and fully digital.
+          </Typography>
+        </motion.div>
+      </Box>
+
+      {/* Values cards — pulled up to overlap header */}
+      <Container maxWidth="lg" sx={{ pb: { xs: 8, md: 12 } }}>
+        <Box sx={{
+          mt: { xs: -4, md: -6 },
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+          gap: { xs: 2.5, md: 3 },
+          mx: 'auto',
+        }}>
+          {values.map((v, i) => (
+            <motion.div
+              key={v.title}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.07, duration: 0.5 }}
+              style={{ height: '100%' }}
+            >
+              <Box sx={{
+                p: { xs: 3, md: 3.5 },
+                minHeight: { xs: 220, md: 235 },
+                height: '100%',
+                borderRadius: 2.5,
+                bgcolor: 'white',
+                border: '1.5px solid #E4EAF4',
+                position: 'relative',
+                overflow: 'hidden',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 2px 12px rgba(10,22,40,0.06)',
+                cursor: 'pointer',
+                transition: 'transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease',
+                '&:hover': {
+                  transform: 'translateY(-6px)',
+                  boxShadow: `0 18px 40px ${v.color}28`,
+                  borderColor: `${v.color}66`,
+                  '& .val-icon': { bgcolor: `${v.color}22`, transform: 'scale(1.08)' },
+                },
+              }}>
+                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, bgcolor: v.color, borderRadius: '10px 10px 0 0' }} />
+                <Box
+                  className="val-icon"
+                  sx={{
+                    width: 58, height: 58, borderRadius: 2.5,
+                    bgcolor: `${v.color}14`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: v.color,
+                    mb: 2.5, mt: 0.5,
+                    transition: 'all 0.28s ease',
+                    flexShrink: 0,
+                  }}
+                >
+                  {v.icon}
+                </Box>
+                <Typography variant="h6" sx={{ color: NAVY, fontWeight: 700, mb: 1.2, fontSize: '1rem', lineHeight: 1.3 }}>
+                  {v.title}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#5A6A85', lineHeight: 1.75, flexGrow: 1 }}>
+                  {v.desc}
+                </Typography>
+              </Box>
+            </motion.div>
+          ))}
+        </Box>
+      </Container>
+
+    </Box>
+  )
+}
