@@ -2,43 +2,87 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Box, Button, TextField, Typography, Alert, CircularProgress,
-  InputAdornment, IconButton, Divider, Chip,
+  InputAdornment, IconButton, Divider,
 } from '@mui/material'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import EmailIcon from '@mui/icons-material/Email'
 import LockIcon from '@mui/icons-material/Lock'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import KeyIcon from '@mui/icons-material/Key'
 import { useAuth } from '../../context/AuthContext'
 import { NAVY, GOLD, NAVY_MID } from '../../theme/theme'
+import api from '../../api/axios'
+
+function redirectByRole(role, navigate) {
+  if (role === 'admin') navigate('/admin/dashboard')
+  else if (role === 'staff' || role === 'agent') navigate('/staff/dashboard')
+  else navigate('/portal/dashboard')
+}
 
 export default function LoginPage() {
-  const [form, setForm] = useState({ email: '', password: '' })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [mode, setMode]         = useState('password') // 'password' | 'otp-send' | 'otp-verify'
+  const [form, setForm]         = useState({ email: '', password: '' })
+  const [otpEmail, setOtpEmail] = useState('')
+  const [otpCode, setOtpCode]   = useState('')
+  const [error, setError]       = useState('')
+  const [info, setInfo]         = useState('')
+  const [loading, setLoading]   = useState(false)
   const [showPass, setShowPass] = useState(false)
-  const { login } = useAuth()
+  const { login, setUserFromToken } = useAuth()
   const navigate = useNavigate()
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value })
 
-  const handleSubmit = async (e) => {
+  // ── Password login ──
+  const handlePasswordLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
       const user = await login(form.email, form.password)
-      const role = user?.roles?.[0]?.name
-      if (role === 'admin') navigate('/admin/dashboard')
-      else if (role === 'staff') navigate('/staff/dashboard')
-      else navigate('/portal/dashboard')
+      redirectByRole(user?.roles?.[0]?.name, navigate)
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password.')
     } finally {
       setLoading(false)
     }
   }
+
+  // ── OTP: send code ──
+  const handleSendOtp = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      await api.post('/auth/otp/send', { email: otpEmail })
+      setInfo('A 6-digit code has been sent to your email.')
+      setMode('otp-verify')
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── OTP: verify code ──
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const { data } = await api.post('/auth/otp/verify', { email: otpEmail, code: otpCode })
+      setUserFromToken(data.user, data.token)
+      redirectByRole(data.user?.roles?.[0]?.name, navigate)
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid or expired code.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const switchMode = (m) => { setError(''); setInfo(''); setMode(m) }
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex' }}>
@@ -81,56 +125,136 @@ export default function LoginPage() {
             Back to Home
           </Button>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Typography variant="h4" sx={{ color: NAVY, fontWeight: 800, mb: 1 }}>Welcome back</Typography>
-            <Typography variant="body1" sx={{ color: '#5A6A85', mb: 4 }}>
-              Sign in to your FilipinoTracks account
-            </Typography>
+          <AnimatePresence mode="wait">
+            {/* ── Password login ── */}
+            {mode === 'password' && (
+              <motion.div key="password" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
+                <Typography variant="h4" sx={{ color: NAVY, fontWeight: 800, mb: 1 }}>Welcome back</Typography>
+                <Typography variant="body1" sx={{ color: '#5A6A85', mb: 4 }}>Sign in to your FilipinoTracks account</Typography>
 
-            {error && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-                <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>
+                {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+
+                <Box component="form" onSubmit={handlePasswordLogin}>
+                  <TextField
+                    label="Email Address" type="email" fullWidth margin="normal" required
+                    value={form.email} onChange={set('email')}
+                    InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: '#94A3B8', fontSize: 20 }} /></InputAdornment> }}
+                  />
+                  <TextField
+                    label="Password" type={showPass ? 'text' : 'password'} fullWidth margin="normal" required
+                    value={form.password} onChange={set('password')}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#94A3B8', fontSize: 20 }} /></InputAdornment>,
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton onClick={() => setShowPass(!showPass)} size="small">
+                            {showPass ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <Button type="submit" fullWidth variant="contained" size="large" disabled={loading}
+                    sx={{ mt: 3, py: 1.8, fontSize: '1rem', fontWeight: 700, background: `linear-gradient(135deg, ${NAVY_MID} 0%, ${NAVY} 100%)` }}>
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+                  </Button>
+                </Box>
+
+                <Divider sx={{ my: 3 }}><Typography variant="caption" sx={{ color: '#94A3B8' }}>or</Typography></Divider>
+
+                <Button fullWidth variant="outlined" size="large" startIcon={<KeyIcon />}
+                  onClick={() => switchMode('otp-send')}
+                  sx={{ py: 1.6, fontWeight: 700, borderColor: `${GOLD}60`, color: '#A8882A',
+                    '&:hover': { borderColor: GOLD, bgcolor: `${GOLD}08` } }}>
+                  Login with Email OTP
+                </Button>
+
+                <Typography variant="body2" sx={{ textAlign: 'center', color: '#5A6A85', mt: 3 }}>
+                  Don't have an account?{' '}
+                  <Link to="/register" style={{ color: GOLD, fontWeight: 700, textDecoration: 'none' }}>Create one free</Link>
+                </Typography>
               </motion.div>
             )}
 
-            <Box component="form" onSubmit={handleSubmit}>
-              <TextField
-                label="Email Address" type="email" fullWidth margin="normal" required
-                value={form.email} onChange={set('email')}
-                InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: '#94A3B8', fontSize: 20 }} /></InputAdornment> }}
-              />
-              <TextField
-                label="Password" type={showPass ? 'text' : 'password'} fullWidth margin="normal" required
-                value={form.password} onChange={set('password')}
-                InputProps={{
-                  startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#94A3B8', fontSize: 20 }} /></InputAdornment>,
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPass(!showPass)} size="small">
-                        {showPass ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <Box sx={{ textAlign: 'right', mt: 1, mb: 3 }}>
-                <Link to="/forgot-password" style={{ color: GOLD, fontSize: '0.875rem', fontWeight: 600, textDecoration: 'none' }}>
-                  Forgot password?
-                </Link>
-              </Box>
-              <Button type="submit" fullWidth variant="contained" size="large" disabled={loading}
-                sx={{ py: 1.8, fontSize: '1rem', fontWeight: 700, background: `linear-gradient(135deg, ${NAVY_MID} 0%, ${NAVY} 100%)` }}>
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
-              </Button>
-            </Box>
+            {/* ── OTP: enter email ── */}
+            {mode === 'otp-send' && (
+              <motion.div key="otp-send" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                  <Box sx={{ width: 44, height: 44, borderRadius: 2, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <KeyIcon sx={{ color: NAVY, fontSize: 22 }} />
+                  </Box>
+                  <Typography variant="h5" sx={{ color: NAVY, fontWeight: 800 }}>Login with OTP</Typography>
+                </Box>
+                <Typography variant="body1" sx={{ color: '#5A6A85', mb: 4 }}>
+                  Enter your registered email and we'll send you a 6-digit login code.
+                </Typography>
 
-            <Divider sx={{ my: 3 }}><Typography variant="caption" sx={{ color: '#94A3B8' }}>or</Typography></Divider>
+                {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
 
-            <Typography variant="body2" sx={{ textAlign: 'center', color: '#5A6A85' }}>
-              Don't have an account?{' '}
-              <Link to="/register" style={{ color: GOLD, fontWeight: 700, textDecoration: 'none' }}>Create one free</Link>
-            </Typography>
-          </motion.div>
+                <Box component="form" onSubmit={handleSendOtp}>
+                  <TextField
+                    label="Registered Email Address" type="email" fullWidth required
+                    value={otpEmail} onChange={e => setOtpEmail(e.target.value)}
+                    InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: '#94A3B8', fontSize: 20 }} /></InputAdornment> }}
+                  />
+                  <Button type="submit" fullWidth variant="contained" size="large" disabled={loading}
+                    sx={{ mt: 3, py: 1.8, fontSize: '1rem', fontWeight: 700, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, color: NAVY }}>
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Send Login Code'}
+                  </Button>
+                </Box>
+
+                <Button fullWidth onClick={() => switchMode('password')} startIcon={<ArrowBackIcon />}
+                  sx={{ mt: 2, color: '#64748B', fontWeight: 600 }}>
+                  Back to Password Login
+                </Button>
+              </motion.div>
+            )}
+
+            {/* ── OTP: enter code ── */}
+            {mode === 'otp-verify' && (
+              <motion.div key="otp-verify" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                  <Box sx={{ width: 44, height: 44, borderRadius: 2, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <KeyIcon sx={{ color: NAVY, fontSize: 22 }} />
+                  </Box>
+                  <Typography variant="h5" sx={{ color: NAVY, fontWeight: 800 }}>Enter Your Code</Typography>
+                </Box>
+                <Typography variant="body1" sx={{ color: '#5A6A85', mb: 1 }}>
+                  We sent a 6-digit code to:
+                </Typography>
+                <Typography variant="body1" sx={{ color: NAVY, fontWeight: 700, mb: 4 }}>{otpEmail}</Typography>
+
+                {info && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{info}</Alert>}
+                {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+
+                <Box component="form" onSubmit={handleVerifyOtp}>
+                  <TextField
+                    label="6-Digit Code" fullWidth required
+                    value={otpCode}
+                    onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    inputProps={{ maxLength: 6, style: { fontSize: '2rem', fontWeight: 800, letterSpacing: '0.5em', textAlign: 'center', fontFamily: 'monospace' } }}
+                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                  />
+                  <Button type="submit" fullWidth variant="contained" size="large"
+                    disabled={loading || otpCode.length !== 6}
+                    sx={{ mt: 3, py: 1.8, fontSize: '1rem', fontWeight: 700, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, color: NAVY }}>
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify & Sign In'}
+                  </Button>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+                  <Button onClick={() => switchMode('otp-send')} startIcon={<ArrowBackIcon />}
+                    sx={{ color: '#64748B', fontWeight: 600 }}>
+                    Change Email
+                  </Button>
+                  <Button onClick={handleSendOtp} disabled={loading}
+                    sx={{ color: GOLD, fontWeight: 700 }}>
+                    Resend Code
+                  </Button>
+                </Box>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Box>
       </Box>
     </Box>
