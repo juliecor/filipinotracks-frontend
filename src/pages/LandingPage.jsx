@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Box, Container, Typography, Chip, Button, IconButton } from '@mui/material'
 import { motion, AnimatePresence } from 'framer-motion'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
+import { useAuth } from '../context/AuthContext'
+import ChatWidget from '../components/chat/ChatWidget'
 import LandingNav from '../components/landing/LandingNav'
 import Hero from '../components/landing/Hero'
 import Services from '../components/landing/Services'
@@ -57,7 +59,7 @@ function CTASection() {
   )
 }
 
-function ScrollToTop() {
+function ScrollToTop({ offset = false }) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -74,7 +76,7 @@ function ScrollToTop() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.6, y: 16 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          style={{ position: 'fixed', bottom: 36, right: 32, zIndex: 1200 }}
+          style={{ position: 'fixed', bottom: offset ? 92 : 36, right: 32, zIndex: 1200 }}
         >
           <IconButton
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -102,6 +104,7 @@ function ScrollToTop() {
 }
 
 export default function LandingPage() {
+  const { user } = useAuth()
   return (
     <Box sx={{ width: '100%' }}>
       <LandingNav />
@@ -114,7 +117,8 @@ export default function LandingPage() {
       <FAQ />
       <Contact />
       <LandingFooter />
-      <ScrollToTop />
+      <ScrollToTop offset={!!user} />
+      {user && <ChatWidget />}
     </Box>
   )
 }

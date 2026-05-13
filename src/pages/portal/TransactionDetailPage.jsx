@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import {
   Box, Typography, Button, Chip, Paper, Grid, Avatar, Divider,
@@ -14,6 +14,8 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import EditIcon from '@mui/icons-material/Edit'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
+import ChatIcon from '@mui/icons-material/Chat'
+import SendIcon from '@mui/icons-material/Send'
 import api from '../../api/axios'
 import { NAVY, GOLD } from '../../theme/theme'
 import { useAuth } from '../../context/AuthContext'
@@ -91,12 +93,47 @@ export default function TransactionDetailPage() {
   const isStaff = user?.roles?.some(r => r.name === 'staff' || r.name === 'agent')
   const canEdit = isAdmin || isStaff
 
+  // Chat
+  const [messages, setMessages]     = useState([])
+  const [chatInput, setChatInput]   = useState('')
+  const [sending, setSending]       = useState(false)
+  const chatBottomRef               = useRef(null)
+  const pollRef                     = useRef(null)
+
   useEffect(() => {
     api.get(`/transactions/${id}`)
       .then(({ data }) => { setTx(data); setNewStatus(data.status) })
       .catch(() => setError('Transaction not found.'))
       .finally(() => setLoading(false))
   }, [id])
+
+  const fetchMessages = () => {
+    api.get(`/transactions/${id}/messages`)
+      .then(({ data }) => setMessages(data))
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    fetchMessages()
+    pollRef.current = setInterval(fetchMessages, 5000)
+    return () => clearInterval(pollRef.current)
+  }, [id])
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const handleSendMessage = async () => {
+    const body = chatInput.trim()
+    if (!body || sending) return
+    setSending(true)
+    setChatInput('')
+    try {
+      const { data } = await api.post(`/transactions/${id}/messages`, { body })
+      setMessages(prev => [...prev, data])
+    } catch { setChatInput(body) }
+    finally { setSending(false) }
+  }
 
   const handleStatusUpdate = async () => {
     setUpdating(true)
@@ -404,6 +441,97 @@ export default function TransactionDetailPage() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* ═══ Chat ═══ */}
+        <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7', mt: 3 }}>
+          <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', alignItems: 'center', gap: 1.5, borderBottom: '1px solid #EEF2F7' }}>
+            <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: `${NAVY}10`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ChatIcon sx={{ fontSize: 18, color: NAVY }} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>Transaction Chat</Typography>
+              <Typography variant="caption" sx={{ color: '#94A3B8' }}>Messages between you and the handling team</Typography>
+            </Box>
+          </Box>
+
+          {/* Message list */}
+          <Box sx={{ height: 380, overflowY: 'auto', px: 3, py: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5,
+            '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#E2E8F0', borderRadius: 4 } }}>
+            {messages.length === 0 ? (
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#CBD5E1' }}>
+                <ChatIcon sx={{ fontSize: 44, mb: 1.5, opacity: 0.4 }} />
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#94A3B8' }}>No messages yet</Typography>
+                <Typography variant="caption" sx={{ color: '#CBD5E1' }}>Start the conversation below</Typography>
+              </Box>
+            ) : (
+              messages.map((msg) => {
+                const isMe = msg.sender_id === user?.id
+                return (
+                  <Box key={msg.id} sx={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap: 1.2, alignItems: 'flex-end' }}>
+                    <Avatar
+                      src={msg.sender_avatar || undefined}
+                      sx={{ width: 30, height: 30, bgcolor: isMe ? GOLD : NAVY, color: isMe ? NAVY : GOLD, fontWeight: 800, fontSize: '0.7rem', flexShrink: 0 }}
+                    >
+                      {!msg.sender_avatar && msg.sender_name?.charAt(0)}
+                    </Avatar>
+                    <Box sx={{ maxWidth: '70%' }}>
+                      {!isMe && (
+                        <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700, px: 0.5, display: 'block', mb: 0.3 }}>
+                          {msg.sender_name}
+                        </Typography>
+                      )}
+                      <Box sx={{
+                        px: 2, py: 1.2, borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                        bgcolor: isMe ? NAVY : 'white',
+                        border: isMe ? 'none' : '1px solid #EDF0F7',
+                        boxShadow: isMe ? `0 2px 8px ${NAVY}25` : '0 1px 4px rgba(10,22,40,0.06)',
+                      }}>
+                        <Typography variant="body2" sx={{ color: isMe ? 'white' : '#1E293B', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                          {msg.body}
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" sx={{ color: '#CBD5E1', fontSize: '0.62rem', display: 'block', mt: 0.3, textAlign: isMe ? 'right' : 'left', px: 0.5 }}>
+                        {new Date(msg.created_at).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' })} · {new Date(msg.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )
+              })
+            )}
+            <div ref={chatBottomRef} />
+          </Box>
+
+          {/* Input */}
+          <Box sx={{ px: 3, py: 2, borderTop: '1px solid #EEF2F7', display: 'flex', gap: 1.5, alignItems: 'flex-end' }}>
+            <TextField
+              fullWidth
+              multiline
+              maxRows={4}
+              size="small"
+              placeholder="Type a message…"
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage() } }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+            />
+            <Tooltip title="Send (Enter)">
+              <span>
+                <IconButton
+                  onClick={handleSendMessage}
+                  disabled={!chatInput.trim() || sending}
+                  sx={{
+                    bgcolor: NAVY, color: 'white', width: 42, height: 42, flexShrink: 0,
+                    '&:hover': { bgcolor: '#1E3A6E' },
+                    '&:disabled': { bgcolor: '#E2E8F0', color: '#94A3B8' },
+                  }}
+                >
+                  {sending ? <CircularProgress size={18} color="inherit" /> : <SendIcon sx={{ fontSize: 18 }} />}
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
+        </Card>
+
       </Box>
 
       {/* Status update dialog */}

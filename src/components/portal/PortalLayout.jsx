@@ -9,7 +9,6 @@ import DashboardIcon from '@mui/icons-material/Dashboard'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'
 import NotificationsIcon from '@mui/icons-material/Notifications'
-import ChatIcon from '@mui/icons-material/Chat'
 import SettingsIcon from '@mui/icons-material/Settings'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
@@ -23,6 +22,7 @@ import StarIcon from '@mui/icons-material/Star'
 import { useAuth } from '../../context/AuthContext'
 import { NAVY, GOLD } from '../../theme/theme'
 import api from '../../api/axios'
+import ChatWidget from '../chat/ChatWidget'
 
 const DRAWER_WIDTH = 255
 const COLLAPSED_WIDTH = 68
@@ -32,7 +32,6 @@ const clientNav = [
   { label: 'Transactions',    path: '/portal/transactions',   icon: <ReceiptLongIcon /> },
   { label: 'Upload Documents',path: '/portal/documents',      icon: <CloudUploadIcon /> },
   { label: 'Notifications',   path: '/portal/notifications',  icon: <NotificationsIcon />, notif: true },
-  { label: 'Messages',        path: '/portal/messages',       icon: <ChatIcon /> },
   { label: 'My Review',       path: '/portal/review',         icon: <StarIcon /> },
   { label: 'Settings',        path: '/portal/settings',       icon: <SettingsIcon /> },
 ]
@@ -51,7 +50,6 @@ const staffNav = [
   { label: 'Dashboard',       path: '/staff/dashboard',       icon: <DashboardIcon /> },
   { label: 'Assigned Tasks',  path: '/staff/transactions',    icon: <AssignmentIcon /> },
   { label: 'Notifications',   path: '/staff/notifications',   icon: <NotificationsIcon />, notif: true },
-  { label: 'Messages',        path: '/staff/messages',        icon: <ChatIcon /> },
   { label: 'Settings',        path: '/staff/settings',        icon: <SettingsIcon /> },
 ]
 
@@ -59,13 +57,22 @@ export default function PortalLayout({ role = 'client' }) {
   const [collapsed, setCollapsed]     = useState(false)
   const [mobileOpen, setMobileOpen]   = useState(false)
   const [anchorEl, setAnchorEl]       = useState(null)
-  const [unreadCount, setUnreadCount] = useState(0)
+  const [unreadCount, setUnreadCount]   = useState(0)
+  const [unreadMsgs, setUnreadMsgs]     = useState(0)
   const { user, logout } = useAuth()
 
   useEffect(() => {
-    api.get('/notifications/unread-count')
-      .then(({ data }) => setUnreadCount(data.count || 0))
-      .catch(() => {})
+    const fetchCounts = () => {
+      api.get('/notifications/unread-count')
+        .then(({ data }) => setUnreadCount(data.count || 0))
+        .catch(() => {})
+      api.get('/messages/unread-count')
+        .then(({ data }) => setUnreadMsgs(data.count || 0))
+        .catch(() => {})
+    }
+    fetchCounts()
+    const interval = setInterval(fetchCounts, 10000)
+    return () => clearInterval(interval)
   }, [])
 
   const navigate  = useNavigate()
@@ -139,7 +146,7 @@ export default function PortalLayout({ role = 'client' }) {
                       '& svg': { fontSize: 21 },
                     }}>
                       {item.notif
-                        ? <Badge badgeContent={unreadCount || 0} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 16, height: 16 } }}>{item.icon}</Badge>
+                        ? <Badge badgeContent={(unreadCount || 0) + (unreadMsgs || 0)} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 16, height: 16 } }}>{item.icon}</Badge>
                         : item.icon}
                     </ListItemIcon>
                     {!collapsed && (
@@ -281,7 +288,7 @@ export default function PortalLayout({ role = 'client' }) {
                 to={role === 'admin' ? '/admin/announcements' : '/portal/notifications'}
                 sx={{ color: '#64748B', width: 36, height: 36 }}
               >
-                <Badge badgeContent={unreadCount || 0} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 16, height: 16 } }}>
+                <Badge badgeContent={(unreadCount || 0) + (unreadMsgs || 0)} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 16, height: 16 } }}>
                   <NotificationsIcon sx={{ fontSize: 20 }} />
                 </Badge>
               </IconButton>
@@ -325,6 +332,9 @@ export default function PortalLayout({ role = 'client' }) {
           <Outlet />
         </Box>
       </Box>
+
+      {/* Global chat widget */}
+      <ChatWidget />
     </Box>
   )
 }
