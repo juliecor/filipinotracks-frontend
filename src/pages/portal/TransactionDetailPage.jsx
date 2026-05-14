@@ -4,7 +4,8 @@ import {
   Box, Typography, Button, Chip, Paper, Grid, Avatar, Divider,
   Skeleton, Alert, IconButton, Tooltip, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, MenuItem, Select,
-  FormControl, InputLabel, CircularProgress, Card, CardContent,
+  FormControl, InputLabel, CircularProgress, Card, CardContent, Table,
+  TableBody, TableCell, TableHead, TableRow,
 } from '@mui/material'
 import { motion, AnimatePresence } from 'framer-motion'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -16,9 +17,11 @@ import EditIcon from '@mui/icons-material/Edit'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import ChatIcon from '@mui/icons-material/Chat'
 import SendIcon from '@mui/icons-material/Send'
+import MapIcon from '@mui/icons-material/Map'
 import api from '../../api/axios'
 import { NAVY, GOLD } from '../../theme/theme'
 import { useAuth } from '../../context/AuthContext'
+import PropertyMapViewer from '../../components/map/PropertyMapViewer'
 
 const STATUS_META = {
   'submitted':                { label: 'Submitted',                color: '#8B5CF6', bg: '#F3F0FF' },
@@ -88,6 +91,7 @@ export default function TransactionDetailPage() {
   const [newStatus, setNewStatus] = useState('')
   const [remarks, setRemarks]   = useState('')
   const [updating, setUpdating] = useState(false)
+  const [propertyMap, setPropertyMap] = useState(null)
 
   const isAdmin = user?.roles?.some(r => r.name === 'admin')
   const isStaff = user?.roles?.some(r => r.name === 'staff' || r.name === 'agent')
@@ -97,7 +101,7 @@ export default function TransactionDetailPage() {
   const [messages, setMessages]     = useState([])
   const [chatInput, setChatInput]   = useState('')
   const [sending, setSending]       = useState(false)
-  const chatBottomRef               = useRef(null)
+  const chatContainerRef            = useRef(null)
   const pollRef                     = useRef(null)
 
   useEffect(() => {
@@ -105,6 +109,10 @@ export default function TransactionDetailPage() {
       .then(({ data }) => { setTx(data); setNewStatus(data.status) })
       .catch(() => setError('Transaction not found.'))
       .finally(() => setLoading(false))
+    // Load property map if it exists (title verification)
+    api.get(`/transactions/${id}/property-map`)
+      .then(({ data }) => setPropertyMap(data))
+      .catch(() => {})
   }, [id])
 
   const fetchMessages = () => {
@@ -120,7 +128,12 @@ export default function TransactionDetailPage() {
   }, [id])
 
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = chatContainerRef.current
+    if (!el) return
+    // Only scroll within the chat box — never hijack the page scroll.
+    // Skip if the user has scrolled up to read older messages.
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    if (isNearBottom) el.scrollTop = el.scrollHeight
   }, [messages])
 
   const handleSendMessage = async () => {
@@ -131,6 +144,10 @@ export default function TransactionDetailPage() {
     try {
       const { data } = await api.post(`/transactions/${id}/messages`, { body })
       setMessages(prev => [...prev, data])
+      setTimeout(() => {
+        if (chatContainerRef.current)
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+      }, 50)
     } catch { setChatInput(body) }
     finally { setSending(false) }
   }
@@ -442,6 +459,107 @@ export default function TransactionDetailPage() {
           </Grid>
         </Grid>
 
+        {/* ═══ Property Map (Title Verification) ═══ */}
+        {propertyMap && (
+          <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7', mt: 3, overflow: 'hidden' }}>
+
+            {/* Card header */}
+            <Box sx={{ px: 3, pt: 2.5, pb: 2, borderBottom: '1px solid #EEF2F7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ width: 36, height: 36, borderRadius: 1.5, bgcolor: `${GOLD}14`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <MapIcon sx={{ fontSize: 18, color: GOLD }} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, color: NAVY, lineHeight: 1.2 }}>Property Map</Typography>
+                  <Typography variant="caption" sx={{ color: '#94A3B8' }}>Location and boundary visualization</Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {propertyMap.latitude && (
+                  <Chip label="Location Pinned" size="small" sx={{ bgcolor: '#DCFCE7', color: '#166534', fontWeight: 700, fontSize: '0.68rem' }} />
+                )}
+                {propertyMap.geojson_polygon && (
+                  <Chip label="Boundary Mapped" size="small" sx={{ bgcolor: `${GOLD}20`, color: '#A8882A', fontWeight: 700, fontSize: '0.68rem' }} />
+                )}
+              </Box>
+            </Box>
+
+            {/* Full-width map */}
+            <PropertyMapViewer propertyMap={propertyMap} />
+
+            {/* Property detail grid */}
+            <Box sx={{ p: 3, borderTop: '1px solid #EEF2F7' }}>
+              <Typography sx={{ fontSize: '0.67rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 2 }}>
+                Property Details
+              </Typography>
+              <Grid container columnSpacing={4} rowSpacing={2}>
+                {[
+                  ['Registered Owner',  propertyMap.registered_owner],
+                  ['Title Number',      propertyMap.title_number],
+                  ['Lot Number',        propertyMap.lot_number],
+                  ['Block Number',      propertyMap.block_number],
+                  ['Survey Plan',       propertyMap.survey_plan_number],
+                  ['Tax Declaration',   propertyMap.tax_declaration_number],
+                  ['Property Type',     propertyMap.property_type],
+                  ['Land Area',         propertyMap.land_area ? `${propertyMap.land_area} sqm` : null],
+                  ['Province',          propertyMap.province],
+                  ['City / Municipality', propertyMap.city_municipality],
+                  ['Barangay',          propertyMap.barangay],
+                  ['Full Address',      propertyMap.full_address],
+                ].filter(([, v]) => v).map(([label, value]) => (
+                  <Grid item xs={12} sm={6} md={3} key={label}>
+                    <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.4 }}>
+                      {label}
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B', textTransform: 'capitalize', lineHeight: 1.4 }}>
+                      {value}
+                    </Typography>
+                  </Grid>
+                ))}
+              </Grid>
+
+              {propertyMap.staff_notes && (
+                <Box sx={{ mt: 2.5, p: 2, bgcolor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 2 }}>
+                  <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.5 }}>Staff Notes</Typography>
+                  <Typography variant="body2" sx={{ color: '#78350F' }}>{propertyMap.staff_notes}</Typography>
+                </Box>
+              )}
+
+              {/* Technical description table */}
+              {propertyMap.boundaries?.some(b => b.degrees) && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography sx={{ fontSize: '0.67rem', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 1.5 }}>
+                    Technical Description
+                  </Typography>
+                  <Box sx={{ overflowX: 'auto', border: '1px solid #EEF2F7', borderRadius: 2 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: '#F8FAFC' }}>
+                          {['Pt From', 'Pt To', 'Bearing', 'Distance (m)'].map(h => (
+                            <TableCell key={h} sx={{ fontWeight: 700, fontSize: '0.65rem', color: '#64748B', py: 1, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</TableCell>
+                          ))}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {propertyMap.boundaries.filter(b => b.degrees).map((b, i) => (
+                          <TableRow key={i} sx={{ '&:last-child td': { borderBottom: 0 } }}>
+                            <TableCell sx={{ fontSize: '0.78rem', py: 0.8, fontWeight: 600 }}>{b.point_from || i + 1}</TableCell>
+                            <TableCell sx={{ fontSize: '0.78rem', py: 0.8, fontWeight: 600 }}>{b.point_to || i + 2}</TableCell>
+                            <TableCell sx={{ fontSize: '0.78rem', py: 0.8, fontFamily: 'monospace', color: NAVY, fontWeight: 700 }}>
+                              {b.dir1} {b.degrees}°{b.minutes ? ` ${b.minutes}'` : ''} {b.dir2}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: '0.78rem', py: 0.8, fontWeight: 600 }}>{b.distance}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          </Card>
+        )}
+
         {/* ═══ Chat ═══ */}
         <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7', mt: 3 }}>
           <Box sx={{ px: 3, pt: 3, pb: 2, display: 'flex', alignItems: 'center', gap: 1.5, borderBottom: '1px solid #EEF2F7' }}>
@@ -455,7 +573,7 @@ export default function TransactionDetailPage() {
           </Box>
 
           {/* Message list */}
-          <Box sx={{ height: 380, overflowY: 'auto', px: 3, py: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5,
+          <Box ref={chatContainerRef} sx={{ height: 380, overflowY: 'auto', px: 3, py: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5,
             '&::-webkit-scrollbar': { width: 4 }, '&::-webkit-scrollbar-thumb': { bgcolor: '#E2E8F0', borderRadius: 4 } }}>
             {messages.length === 0 ? (
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#CBD5E1' }}>
@@ -498,7 +616,6 @@ export default function TransactionDetailPage() {
                 )
               })
             )}
-            <div ref={chatBottomRef} />
           </Box>
 
           {/* Input */}

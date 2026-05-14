@@ -169,7 +169,10 @@ export default function NewTransactionPage() {
                             transition: 'all 0.15s',
                             '&:hover': { borderColor: active ? GOLD : '#CBD5E1', boxShadow: '0 4px 12px rgba(10,22,40,0.08)' },
                           }}>
-                            <CardActionArea onClick={() => setForm(f => ({ ...f, service_type: svc.value }))} sx={{ p: 2 }}>
+                            <CardActionArea onClick={() => {
+                              if (svc.value === 'title-verification') { navigate('/portal/title-verification'); return; }
+                              setForm(f => ({ ...f, service_type: svc.value }))
+                            }} sx={{ p: 2 }}>
                               <CardContent sx={{ p: '0 !important' }}>
                                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
                                   <Box sx={{

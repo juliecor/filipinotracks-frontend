@@ -10,6 +10,7 @@ import ClientDashboard from './pages/portal/ClientDashboard'
 import TransactionsPage from './pages/portal/TransactionsPage'
 import NewTransactionPage from './pages/portal/NewTransactionPage'
 import TransactionDetailPage from './pages/portal/TransactionDetailPage'
+import TitleVerificationPage from './pages/portal/TitleVerificationPage'
 import DocumentsPage from './pages/portal/DocumentsPage'
 import NotificationsPage from './pages/portal/NotificationsPage'
 import MessagesPage from './pages/portal/MessagesPage'
@@ -23,6 +24,7 @@ import AdminTransactionsPage from './pages/admin/AdminTransactionsPage'
 import AdminAnnouncementsPage from './pages/admin/AdminAnnouncementsPage'
 import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage'
 import AdminTestimonialsPage from './pages/admin/AdminTestimonialsPage'
+import AdminPropertyMapsPage from './pages/admin/AdminPropertyMapsPage'
 
 // Staff portal pages
 import StaffDashboard from './pages/staff/StaffDashboard'
@@ -62,9 +64,10 @@ function App() {
         <Route path="/portal" element={<ProtectedRoute roles={['client']}><PortalLayout role="client" /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard"           element={<ClientDashboard />} />
-          <Route path="transactions"        element={<TransactionsPage />} />
-          <Route path="transactions/new"    element={<NewTransactionPage />} />
-          <Route path="transactions/:id"    element={<TransactionDetailPage />} />
+          <Route path="transactions"            element={<TransactionsPage />} />
+          <Route path="transactions/new"        element={<NewTransactionPage />} />
+          <Route path="transactions/:id"        element={<TransactionDetailPage />} />
+          <Route path="title-verification"      element={<TitleVerificationPage />} />
           <Route path="documents"           element={<DocumentsPage />} />
           <Route path="notifications"       element={<NotificationsPage />} />
           <Route path="messages"            element={<MessagesPage />} />
@@ -83,15 +86,16 @@ function App() {
           <Route path="analytics"           element={<AdminAnalyticsPage />} />
           <Route path="announcements"       element={<AdminAnnouncementsPage />} />
           <Route path="testimonials"        element={<AdminTestimonialsPage />} />
+          <Route path="property-maps"       element={<AdminPropertyMapsPage />} />
           <Route path="settings"            element={<SettingsPage />} />
         </Route>
 
         {/* Staff Portal */}
         <Route path="/staff" element={<ProtectedRoute roles={['staff', 'agent']}><PortalLayout role="staff" /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"           element={<StaffDashboard />} />
-          <Route path="transactions"        element={<StaffTransactionsPage />} />
-          <Route path="transactions/:id"    element={<TransactionDetailPage />} />
+          <Route path="dashboard"              element={<StaffDashboard />} />
+          <Route path="transactions"           element={<StaffTransactionsPage />} />
+          <Route path="transactions/:id"       element={<TransactionDetailPage />} />
           <Route path="notifications"       element={<NotificationsPage />} />
           <Route path="messages"            element={<MessagesPage />} />
           <Route path="settings"            element={<SettingsPage />} />

@@ -1,0 +1,398 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  Box, Typography, Button, Stepper, Step, StepLabel, TextField, MenuItem,
+  Select, FormControl, InputLabel, Grid, IconButton, Paper, CircularProgress,
+  Alert, Chip, Divider, Tooltip,
+} from '@mui/material'
+import { motion, AnimatePresence } from 'framer-motion'
+import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import AddIcon from '@mui/icons-material/Add'
+import DeleteIcon from '@mui/icons-material/Delete'
+import MapIcon from '@mui/icons-material/Map'
+import HomeWorkIcon from '@mui/icons-material/HomeWork'
+import TableChartIcon from '@mui/icons-material/TableChart'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import { NAVY, GOLD } from '../../theme/theme'
+import api from '../../api/axios'
+import PropertyMapPicker from '../../components/map/PropertyMapPicker'
+import PhLocationPicker from '../../components/PhLocationPicker'
+import { boundariesToPolygon, pointsToGeoJSON } from '../../utils/bearingToPolygon'
+
+const STEPS = ['Property Information', 'Map Location', 'Technical Description', 'Review & Submit']
+
+const PROPERTY_TYPES = [
+  { value: 'residential',  label: 'Residential' },
+  { value: 'commercial',   label: 'Commercial' },
+  { value: 'agricultural', label: 'Agricultural' },
+  { value: 'condominium',  label: 'Condominium' },
+]
+
+const EMPTY_BOUNDARY = { point_from: '', point_to: '', dir1: 'N', degrees: '', minutes: '', dir2: 'E', distance: '' }
+
+function StepHeader({ icon, title, subtitle, optional }) {
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+        <Box sx={{ width: 40, height: 40, borderRadius: 2, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {icon}
+        </Box>
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: NAVY }}>{title}</Typography>
+            {optional && <Chip label="Optional" size="small" sx={{ bgcolor: '#F1F5F9', color: '#64748B', fontWeight: 700, fontSize: '0.65rem' }} />}
+          </Box>
+          {subtitle && <Typography variant="body2" sx={{ color: '#64748B' }}>{subtitle}</Typography>}
+        </Box>
+      </Box>
+    </Box>
+  )
+}
+
+export default function TitleVerificationPage() {
+  const navigate = useNavigate()
+  const [step, setStep] = useState(0)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  const [info, setInfo] = useState({
+    title_number: '', lot_number: '', block_number: '', survey_plan_number: '',
+    tax_declaration_number: '', property_type: '', registered_owner: '',
+    land_area: '', province: '', city_municipality: '', barangay: '',
+    full_address: '', remarks: '',
+  })
+  const [location, setLocation] = useState({ lat: null, lng: null })
+  const [boundaries, setBoundaries] = useState([{ ...EMPTY_BOUNDARY }])
+
+  const set = (k) => (e) => setInfo(p => ({ ...p, [k]: e.target.value }))
+
+  // Compute polygon from boundaries + pin
+  const polygonPoints = location.lat
+    ? boundariesToPolygon(location.lat, location.lng, boundaries.map(b => ({ ...b })))
+    : []
+
+  const handleAddRow = () => setBoundaries(p => [...p, { ...EMPTY_BOUNDARY }])
+  const handleRemoveRow = (i) => setBoundaries(p => p.filter((_, idx) => idx !== i))
+  const setRow = (i, k) => (e) => {
+    setBoundaries(p => p.map((r, idx) => idx === i ? { ...r, [k]: e.target.value } : r))
+  }
+
+  const hasBoundaries = boundaries.some(b => b.degrees && b.distance)
+
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    setError('')
+    try {
+      // 1. Create transaction
+      const { data: tx } = await api.post('/transactions', {
+        service_type: 'title-verification',
+        property_title_number: info.title_number,
+        lot_number: info.lot_number,
+        block_number: info.block_number,
+        tax_declaration_number: info.tax_declaration_number,
+        property_address: info.full_address,
+        property_type: info.property_type,
+        lot_area: info.land_area,
+        registered_owner: info.registered_owner,
+        remarks: info.remarks,
+      })
+
+      // 2. Compute GeoJSON polygon if boundaries exist
+      const geoJson = polygonPoints.length > 2 ? pointsToGeoJSON(polygonPoints) : null
+
+      // 3. Save property map
+      await api.post(`/transactions/${tx.id}/property-map`, {
+        ...info,
+        latitude: location.lat,
+        longitude: location.lng,
+        geojson_polygon: geoJson,
+        boundaries: hasBoundaries ? boundaries : [],
+      })
+
+      navigate(`/portal/transactions/${tx.id}`, { state: { new: true } })
+    } catch (err) {
+      setError(err.response?.data?.message || 'Submission failed. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const canNext = () => {
+    if (step === 0) return info.registered_owner || info.title_number
+    return true
+  }
+
+  return (
+    <Box sx={{ minHeight: '100%', bgcolor: '#F4F6FA' }}>
+
+      {/* Hero */}
+      <Box sx={{ background: `linear-gradient(140deg, #1A3A6E 0%, #245AA0 100%)`, px: { xs: 3, md: 5 }, pt: { xs: 3, md: 4 }, pb: { xs: 5, md: 6 } }}>
+        <Box sx={{ maxWidth: 860, mx: 'auto' }}>
+          <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}
+            sx={{ color: 'rgba(255,255,255,0.6)', mb: 2, fontWeight: 600, '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.08)' } }}>
+            Back
+          </Button>
+          <Typography variant="h5" sx={{ color: 'white', fontWeight: 800, mb: 0.5 }}>Title Verification Request</Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem' }}>
+            Submit your property details for professional title verification
+          </Typography>
+        </Box>
+      </Box>
+
+      <Box sx={{ maxWidth: 860, mx: 'auto', px: { xs: 2, md: 3 }, py: 4 }}>
+
+        {/* Stepper */}
+        <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
+          <Stepper activeStep={step} alternativeLabel>
+            {STEPS.map((label, i) => (
+              <Step key={label} completed={step > i}>
+                <StepLabel sx={{
+                  '& .MuiStepLabel-label': { fontWeight: step === i ? 700 : 500, color: step === i ? NAVY : '#94A3B8', fontSize: '0.8rem' },
+                  '& .MuiStepIcon-root.Mui-active': { color: GOLD },
+                  '& .MuiStepIcon-root.Mui-completed': { color: '#22C55E' },
+                }}>
+                  {label}
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        </Paper>
+
+        {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+
+        <AnimatePresence mode="wait">
+          <motion.div key={step} initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }} transition={{ duration: 0.25 }}>
+
+            {/* ── STEP 1: Property Information ── */}
+            {step === 0 && (
+              <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
+                <StepHeader icon={<HomeWorkIcon sx={{ color: NAVY, fontSize: 20 }} />} title="Property Information" subtitle="Enter the details from your property title" />
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}><TextField label="Title Number" fullWidth size="small" value={info.title_number} onChange={set('title_number')} /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Lot Number" fullWidth size="small" value={info.lot_number} onChange={set('lot_number')} /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Block Number" fullWidth size="small" value={info.block_number} onChange={set('block_number')} /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Survey Plan Number" fullWidth size="small" value={info.survey_plan_number} onChange={set('survey_plan_number')} /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Tax Declaration Number" fullWidth size="small" value={info.tax_declaration_number} onChange={set('tax_declaration_number')} /></Grid>
+                  <Grid item xs={12} sm={6}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Property Type</InputLabel>
+                      <Select label="Property Type" value={info.property_type} onChange={set('property_type')}>
+                        {PROPERTY_TYPES.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12}><TextField label="Registered Owner Name" fullWidth size="small" value={info.registered_owner} onChange={set('registered_owner')} /></Grid>
+                  <Grid item xs={12} sm={4}><TextField label="Land Area (sqm)" type="number" fullWidth size="small" value={info.land_area} onChange={set('land_area')} /></Grid>
+                  <PhLocationPicker
+                    onChange={({ province, city_municipality, barangay }) =>
+                      setInfo(p => ({ ...p, province, city_municipality, barangay }))
+                    }
+                  />
+                  <Grid item xs={12}><TextField label="Full Address" fullWidth size="small" multiline rows={2} value={info.full_address} onChange={set('full_address')} /></Grid>
+                  <Grid item xs={12}><TextField label="Additional Remarks (optional)" fullWidth size="small" multiline rows={2} value={info.remarks} onChange={set('remarks')} /></Grid>
+                </Grid>
+              </Paper>
+            )}
+
+            {/* ── STEP 2: Map Location ── */}
+            {step === 1 && (
+              <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
+                <StepHeader
+                  icon={<MapIcon sx={{ color: NAVY, fontSize: 20 }} />}
+                  title="Map Location"
+                  subtitle="Pin the exact location of your property on the map"
+                  optional
+                />
+                <Alert severity="info" icon={<InfoOutlinedIcon />} sx={{ mb: 2.5, borderRadius: 2, fontSize: '0.82rem' }}>
+                  <strong>This step is optional.</strong> If you don't know the exact location, you can skip it and our staff will assist you. Click anywhere on the map to place a pin.
+                </Alert>
+                <PropertyMapPicker
+                  lat={location.lat}
+                  lng={location.lng}
+                  polygonPoints={polygonPoints}
+                  onChange={({ lat, lng }) => setLocation({ lat, lng })}
+                />
+                {location.lat && (
+                  <Box sx={{ mt: 1.5, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button size="small" onClick={() => setLocation({ lat: null, lng: null })} sx={{ color: '#EF4444', fontWeight: 600 }}>
+                      Clear Pin
+                    </Button>
+                  </Box>
+                )}
+              </Paper>
+            )}
+
+            {/* ── STEP 3: Technical Description ── */}
+            {step === 2 && (
+              <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
+                <StepHeader
+                  icon={<TableChartIcon sx={{ color: NAVY, fontSize: 20 }} />}
+                  title="Technical Description"
+                  subtitle="Enter bearings and distances from your property's technical description"
+                  optional
+                />
+                <Alert severity="info" icon={<InfoOutlinedIcon />} sx={{ mb: 3, borderRadius: 2, fontSize: '0.82rem' }}>
+                  <strong>This step is optional.</strong> Only fill this if your title has a Technical Description section with bearings and distances. This helps us draw an approximate boundary on the map.
+                </Alert>
+
+                {/* Column headers */}
+                <Box sx={{ display: { xs: 'none', md: 'grid' }, gridTemplateColumns: '80px 80px 1fr 80px 80px 1fr 120px 44px', gap: 1, mb: 1, px: 0.5 }}>
+                  {['Pt From', 'Pt To', 'Direction', '°Deg', "'Min", 'Direction', 'Distance (m)', ''].map(h => (
+                    <Typography key={h} variant="caption" sx={{ fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', fontSize: '0.62rem' }}>{h}</Typography>
+                  ))}
+                </Box>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {boundaries.map((row, i) => (
+                    <Box key={i} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: '80px 80px 1fr 80px 80px 1fr 120px 44px' }, gap: 1, alignItems: 'center', p: { xs: 1.5, md: 0 }, bgcolor: { xs: '#F8FAFC', md: 'transparent' }, borderRadius: { xs: 2, md: 0 }, border: { xs: '1px solid #EEF2F7', md: 'none' } }}>
+                      <TextField size="small" placeholder="1" value={row.point_from} onChange={setRow(i, 'point_from')} inputProps={{ style: { textAlign: 'center' } }} />
+                      <TextField size="small" placeholder="2" value={row.point_to} onChange={setRow(i, 'point_to')} inputProps={{ style: { textAlign: 'center' } }} />
+                      <FormControl size="small">
+                        <Select value={row.dir1} onChange={setRow(i, 'dir1')}>
+                          <MenuItem value="N">N (North)</MenuItem>
+                          <MenuItem value="S">S (South)</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <TextField size="small" placeholder="45" type="number" value={row.degrees} onChange={setRow(i, 'degrees')} inputProps={{ min: 0, max: 89, style: { textAlign: 'center' } }} />
+                      <TextField size="small" placeholder="30" type="number" value={row.minutes} onChange={setRow(i, 'minutes')} inputProps={{ min: 0, max: 59, style: { textAlign: 'center' } }} />
+                      <FormControl size="small">
+                        <Select value={row.dir2} onChange={setRow(i, 'dir2')}>
+                          <MenuItem value="E">E (East)</MenuItem>
+                          <MenuItem value="W">W (West)</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <TextField size="small" placeholder="Meters" type="number" value={row.distance} onChange={setRow(i, 'distance')} />
+                      <Tooltip title="Remove row">
+                        <span>
+                          <IconButton size="small" onClick={() => handleRemoveRow(i)} disabled={boundaries.length === 1}
+                            sx={{ color: '#EF4444', '&:disabled': { color: '#CBD5E1' } }}>
+                            <DeleteIcon sx={{ fontSize: 18 }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </Box>
+                  ))}
+                </Box>
+
+                <Button startIcon={<AddIcon />} onClick={handleAddRow} sx={{ mt: 2, color: NAVY, fontWeight: 700, bgcolor: '#F4F6FA', '&:hover': { bgcolor: '#EDF0F7' } }}>
+                  Add Row
+                </Button>
+
+                {hasBoundaries && location.lat && (
+                  <Box sx={{ mt: 3, p: 2, bgcolor: `${GOLD}10`, border: `1px solid ${GOLD}40`, borderRadius: 2 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#A8882A', mb: 0.5 }}>
+                      ✓ Boundary will be drawn on map ({polygonPoints.length} points computed)
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#A8882A' }}>
+                      This is an approximate visualization only, not a legal cadastral plot.
+                    </Typography>
+                  </Box>
+                )}
+
+                {hasBoundaries && !location.lat && (
+                  <Alert severity="warning" sx={{ mt: 2, borderRadius: 2, fontSize: '0.82rem' }}>
+                    Please go back and pin a starting location on the map to enable boundary drawing.
+                  </Alert>
+                )}
+              </Paper>
+            )}
+
+            {/* ── STEP 4: Review & Submit ── */}
+            {step === 3 && (
+              <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
+                <StepHeader icon={<CheckCircleIcon sx={{ color: NAVY, fontSize: 20 }} />} title="Review & Submit" subtitle="Confirm your details before submitting" />
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                  {/* Property info summary */}
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: NAVY, mb: 1.5 }}>Property Details</Typography>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                      {[
+                        ['Registered Owner', info.registered_owner],
+                        ['Title Number', info.title_number],
+                        ['Lot Number', info.lot_number],
+                        ['Block Number', info.block_number],
+                        ['Property Type', info.property_type],
+                        ['Land Area', info.land_area ? `${info.land_area} sqm` : null],
+                        ['Province', info.province],
+                        ['City/Municipality', info.city_municipality],
+                        ['Barangay', info.barangay],
+                      ].filter(([, v]) => v).map(([label, value]) => (
+                        <Box key={label}>
+                          <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.62rem' }}>{label}</Typography>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B' }}>{value}</Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                    {info.full_address && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', fontSize: '0.62rem' }}>Full Address</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B' }}>{info.full_address}</Typography>
+                      </Box>
+                    )}
+                  </Box>
+
+                  <Divider />
+
+                  {/* Location summary */}
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {location.lat
+                        ? <Chip label="✓ Location Pinned" size="small" sx={{ bgcolor: '#DCFCE7', color: '#166534', fontWeight: 700 }} />
+                        : <Chip label="No Location" size="small" sx={{ bgcolor: '#F1F5F9', color: '#64748B', fontWeight: 700 }} />}
+                    </Box>
+                    {hasBoundaries
+                      ? <Chip label={`✓ ${boundaries.filter(b => b.degrees && b.distance).length} Boundary Points`} size="small" sx={{ bgcolor: `${GOLD}20`, color: '#A8882A', fontWeight: 700 }} />
+                      : <Chip label="No Technical Description" size="small" sx={{ bgcolor: '#F1F5F9', color: '#64748B', fontWeight: 700 }} />}
+                  </Box>
+
+                  <Box sx={{ p: 2.5, bgcolor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 2 }}>
+                    <Typography variant="body2" sx={{ color: '#92400E', lineHeight: 1.7 }}>
+                      By submitting, you confirm that all information provided is accurate and that you are authorized to submit this title verification request. Our team will review your submission within 1–3 business days.
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Navigation */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+          <Button
+            onClick={() => setStep(s => s - 1)}
+            disabled={step === 0}
+            startIcon={<ArrowBackIcon />}
+            sx={{ color: '#64748B', fontWeight: 600 }}
+          >
+            Back
+          </Button>
+          <Box sx={{ display: 'flex', gap: 1.5 }}>
+            {step < 3 ? (
+              <Button
+                variant="contained"
+                endIcon={<ArrowForwardIcon />}
+                onClick={() => setStep(s => s + 1)}
+                sx={{ fontWeight: 700, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, color: NAVY, px: 3 }}
+              >
+                {step === 1 && !location.lat ? 'Skip Location' : step === 2 && !hasBoundaries ? 'Skip' : 'Next'}
+              </Button>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={submitting}
+                startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : <CheckCircleIcon />}
+                sx={{ fontWeight: 700, background: `linear-gradient(135deg, #22C55E 0%, #16A34A 100%)`, color: 'white', px: 4 }}
+              >
+                {submitting ? 'Submitting…' : 'Submit Request'}
+              </Button>
+            )}
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  )
+}

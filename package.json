@@ -17,6 +17,7 @@
     "@mui/icons-material": "^9.0.1",
     "@mui/material": "^9.0.1",
     "@mui/x-data-grid": "^9.1.0",
+    "@react-google-maps/api": "^2.20.8",
     "axios": "^1.16.0",
     "dayjs": "^1.11.20",
     "framer-motion": "^12.38.0",

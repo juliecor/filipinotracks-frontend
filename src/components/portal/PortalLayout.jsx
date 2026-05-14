@@ -17,6 +17,7 @@ import PeopleIcon from '@mui/icons-material/People'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import CampaignIcon from '@mui/icons-material/Campaign'
 import AssignmentIcon from '@mui/icons-material/Assignment'
+import MapIcon from '@mui/icons-material/Map'
 import HomeIcon from '@mui/icons-material/Home'
 import StarIcon from '@mui/icons-material/Star'
 import { useAuth } from '../../context/AuthContext'
@@ -37,13 +38,14 @@ const clientNav = [
 ]
 
 const adminNav = [
-  { label: 'Dashboard',    path: '/admin/dashboard',    icon: <DashboardIcon /> },
-  { label: 'Users',        path: '/admin/users',        icon: <PeopleIcon /> },
-  { label: 'Transactions', path: '/admin/transactions', icon: <ReceiptLongIcon /> },
-  { label: 'Analytics',    path: '/admin/analytics',    icon: <BarChartIcon /> },
-  { label: 'Announcements',path: '/admin/announcements',icon: <CampaignIcon /> },
-  { label: 'Testimonials', path: '/admin/testimonials', icon: <StarIcon /> },
-  { label: 'Settings',     path: '/admin/settings',     icon: <SettingsIcon /> },
+  { label: 'Dashboard',       path: '/admin/dashboard',      icon: <DashboardIcon /> },
+  { label: 'Users',           path: '/admin/users',          icon: <PeopleIcon /> },
+  { label: 'Transactions',    path: '/admin/transactions',   icon: <ReceiptLongIcon /> },
+  { label: 'Property Maps',   path: '/admin/property-maps',  icon: <MapIcon /> },
+  { label: 'Analytics',       path: '/admin/analytics',      icon: <BarChartIcon /> },
+  { label: 'Announcements',   path: '/admin/announcements',  icon: <CampaignIcon /> },
+  { label: 'Testimonials',    path: '/admin/testimonials',   icon: <StarIcon /> },
+  { label: 'Settings',        path: '/admin/settings',       icon: <SettingsIcon /> },
 ]
 
 const staffNav = [
