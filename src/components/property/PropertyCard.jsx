@@ -16,7 +16,7 @@ export default function PropertyCard({ m, isActive, onClick }) {
     <Box
       onClick={onClick}
       role="button"
-      tabIndex={0}
+      tabIndex={0}  
       sx={{
         p: 1.75,
         borderRadius: 2,

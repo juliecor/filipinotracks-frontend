@@ -23,6 +23,7 @@ export default function FAQ() {
       <Container maxWidth="md">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <Box sx={{ textAlign: 'center', mb: 8 }}>
+            
             <Chip label="FAQ" sx={{ mb: 2, bgcolor: `${GOLD}18`, color: GOLD, fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.7rem' }} />
             <Typography variant="h2" sx={{ color: NAVY, mb: 2, fontSize: { xs: '2rem', md: '2.8rem' } }}>
               Frequently Asked Questions
