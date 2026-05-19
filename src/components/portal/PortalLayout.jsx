@@ -42,7 +42,6 @@ const adminNav = [
   { label: 'Users',           path: '/admin/users',          icon: <PeopleIcon /> },
   { label: 'Transactions',    path: '/admin/transactions',   icon: <ReceiptLongIcon /> },
   { label: 'Property Maps',   path: '/admin/property-maps',  icon: <MapIcon /> },
-  { label: 'Analytics',       path: '/admin/analytics',      icon: <BarChartIcon /> },
   { label: 'Announcements',   path: '/admin/announcements',  icon: <CampaignIcon /> },
   { label: 'Testimonials',    path: '/admin/testimonials',   icon: <StarIcon /> },
   { label: 'Settings',        path: '/admin/settings',       icon: <SettingsIcon /> },

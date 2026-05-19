@@ -23,7 +23,6 @@ import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
 import AdminTransactionsPage from './pages/admin/AdminTransactionsPage'
 import AdminAnnouncementsPage from './pages/admin/AdminAnnouncementsPage'
-import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage'
 import AdminTestimonialsPage from './pages/admin/AdminTestimonialsPage'
 import AdminPropertyMapsPage from './pages/admin/AdminPropertyMapsPage'
 
@@ -87,7 +86,6 @@ function App() {
           <Route path="transactions"        element={<AdminTransactionsPage />} />
           <Route path="transactions/:id"    element={<TransactionDetailPage />} />
           <Route path="staff"               element={<AdminUsersPage />} />
-          <Route path="analytics"           element={<AdminAnalyticsPage />} />
           <Route path="announcements"       element={<AdminAnnouncementsPage />} />
           <Route path="testimonials"        element={<AdminTestimonialsPage />} />
           <Route path="property-maps"       element={<AdminPropertyMapsPage />} />
