@@ -8,25 +8,25 @@ import CancelIcon from '@mui/icons-material/Cancel'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import SupportAgentIcon from '@mui/icons-material/SupportAgent'
 import FolderCopyIcon from '@mui/icons-material/FolderCopy'
-import { NAVY, GOLD } from '../../theme/theme'
+import { NAVY, NAVY_SURFACE, NAVY_LINE, GOLD, GOLD_DARK, INFO, SUCCESS, WARNING, DANGER, SURFACE_SUBTLE } from '../../theme/theme'
 
 const services = [
-  { icon: <VerifiedIcon sx={{ fontSize: 30 }} />, title: 'Title Verification', desc: 'Authenticate and verify the legitimacy of land titles with LRA database cross-referencing.', color: '#3B82F6', tag: 'Most Popular' },
+  { icon: <VerifiedIcon sx={{ fontSize: 30 }} />, title: 'Title Verification', desc: 'Authenticate and verify the legitimacy of land titles with LRA database cross-referencing.', color: INFO, tag: 'Most Popular' },
   { icon: <SwapHorizIcon sx={{ fontSize: 30 }} />, title: 'Transfer of Title', desc: 'Complete end-to-end title transfer processing from deed of sale to new TCT/OCT issuance.', color: GOLD, tag: '' },
-  { icon: <ArticleIcon sx={{ fontSize: 30 }} />, title: 'Tax Declaration', desc: 'New declaration, transfer, correction, and cancellation of real property tax declarations.', color: '#22C55E', tag: '' },
-  { icon: <HomeWorkIcon sx={{ fontSize: 30 }} />, title: 'Mortgage Annotation', desc: 'REM registration, cancellation of mortgage, and other liens or encumbrances on titles.', color: '#8B5CF6', tag: '' },
-  { icon: <CancelIcon sx={{ fontSize: 30 }} />, title: 'Title Cancellation', desc: 'Legal cancellation of lost, destroyed, or superseded land titles with court coordination.', color: '#EF4444', tag: '' },
-  { icon: <AccountBalanceIcon sx={{ fontSize: 30 }} />, title: 'Land Registration', desc: 'Original registration of unregistered lands, judicial and administrative proceedings.', color: '#06B6D4', tag: 'Premium' },
-  { icon: <SupportAgentIcon sx={{ fontSize: 30 }} />, title: 'Property Consultation', desc: 'Expert advice on property rights, title issues, boundary disputes, and legal strategies.', color: '#F59E0B', tag: '' },
-  { icon: <FolderCopyIcon sx={{ fontSize: 30 }} />, title: 'Document Processing', desc: 'Notarization, certification, and processing of all real estate related documents.', color: '#EC4899', tag: '' },
+  { icon: <ArticleIcon sx={{ fontSize: 30 }} />, title: 'Tax Declaration', desc: 'New declaration, transfer, correction, and cancellation of real property tax declarations.', color: SUCCESS, tag: '' },
+  { icon: <HomeWorkIcon sx={{ fontSize: 30 }} />, title: 'Mortgage Annotation', desc: 'REM registration, cancellation of mortgage, and other liens or encumbrances on titles.', color: NAVY, tag: '' },
+  { icon: <CancelIcon sx={{ fontSize: 30 }} />, title: 'Title Cancellation', desc: 'Legal cancellation of lost, destroyed, or superseded land titles with court coordination.', color: DANGER, tag: '' },
+  { icon: <AccountBalanceIcon sx={{ fontSize: 30 }} />, title: 'Land Registration', desc: 'Original registration of unregistered lands, judicial and administrative proceedings.', color: NAVY_LINE, tag: 'Premium' },
+  { icon: <SupportAgentIcon sx={{ fontSize: 30 }} />, title: 'Property Consultation', desc: 'Expert advice on property rights, title issues, boundary disputes, and legal strategies.', color: WARNING, tag: '' },
+  { icon: <FolderCopyIcon sx={{ fontSize: 30 }} />, title: 'Document Processing', desc: 'Notarization, certification, and processing of all real estate related documents.', color: GOLD_DARK, tag: '' },
 ]
 
 export default function Services() {
   return (
-    <Box id="services" sx={{ bgcolor: '#F0F4FA' }}>
+    <Box id="services" sx={{ bgcolor: SURFACE_SUBTLE }}>
       {/* Header band */}
       <Box sx={{
-        background: `linear-gradient(135deg, ${NAVY} 0%, #0D2045 60%, #1E3A5F 100%)`,
+        background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_SURFACE} 60%, ${NAVY_LINE} 100%)`,
         py: { xs: 8, md: 10 },
         textAlign: 'center',
         position: 'relative',
@@ -78,7 +78,7 @@ export default function Services() {
                   height: '100%',
                   borderRadius: 2.5,
                   bgcolor: 'white',
-                  border: '1.5px solid #E4EAF4',
+                  border: '1.5px solid #E5EAF2',
                   position: 'relative',
                   overflow: 'hidden',
                   display: 'flex',
@@ -139,7 +139,7 @@ export default function Services() {
                   <Typography variant="h6" sx={{ color: NAVY, fontWeight: 700, mb: 1.2, fontSize: '1rem', lineHeight: 1.3 }}>
                     {service.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: '#5A6A85', lineHeight: 1.75, flexGrow: 1 }}>
+                  <Typography variant="body2" sx={{ color: '#64748B', lineHeight: 1.75, flexGrow: 1 }}>
                     {service.desc}
                   </Typography>
                 </Box>

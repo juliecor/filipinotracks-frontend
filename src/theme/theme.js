@@ -1,20 +1,40 @@
 import { createTheme, alpha } from '@mui/material/styles'
 
-const NAVY = '#0A1628'
-const NAVY_LIGHT = '#132040'
-const NAVY_MID = '#1E3A5F'
-const GOLD = '#C9A84C'
-const GOLD_LIGHT = '#E8C96D'
-const GOLD_DARK = '#A8882A'
+// ─── Brand ────────────────────────────────────────────────
+const NAVY         = '#0A1628'   // canonical primary
+const NAVY_SURFACE = '#13284A'   // sidebars, dark gradients (single source)
+const NAVY_LINE    = '#1E3A5F'   // subtle borders on dark surfaces
+const NAVY_DEEP    = '#060E1A'   // deepest navy (button :hover)
+
+const GOLD       = '#C9A24A'     // slightly cleaner than C9A84C
+const GOLD_LIGHT = '#E6C76A'
+const GOLD_DARK  = '#9F7E2C'
+
 const WHITE = '#FFFFFF'
+
+// ─── Neutrals (single canonical scale) ─────────────────────
+const SURFACE        = '#F6F8FB'  // page background
+const SURFACE_SUBTLE = '#EEF2F7'  // alt sections, empty states
+const BORDER         = '#E5EAF2'  // canonical border
+const BORDER_STRONG  = '#D4DCE8'  // emphasized border
+const TEXT_PRIMARY   = NAVY
+const TEXT_BODY      = '#334155'  // body copy / table rows
+const TEXT_MUTED     = '#64748B'  // labels, secondary
+const TEXT_SUBTLE    = '#94A3B8'  // captions, helper
+
+// ─── Status (5 semantic colors — deeper, more authoritative) ──
+const INFO    = '#2563EB'
+const SUCCESS = '#16A34A'
+const WARNING = '#D97706'
+const DANGER  = '#DC2626'
 
 const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
       main: NAVY,
-      light: NAVY_MID,
-      dark: '#060E1A',
+      light: NAVY_LINE,
+      dark: NAVY_DEEP,
       contrastText: WHITE,
     },
     secondary: {
@@ -24,18 +44,18 @@ const theme = createTheme({
       contrastText: NAVY,
     },
     background: {
-      default: '#F5F7FA',
+      default: SURFACE,
       paper: WHITE,
     },
     text: {
-      primary: '#0A1628',
-      secondary: '#5A6A85',
+      primary: TEXT_PRIMARY,
+      secondary: TEXT_MUTED,
     },
-    success: { main: '#22C55E', light: '#DCFCE7', dark: '#166534' },
-    warning: { main: '#F59E0B', light: '#FEF3C7', dark: '#92400E' },
-    error: { main: '#EF4444', light: '#FEE2E2', dark: '#991B1B' },
-    info: { main: '#3B82F6', light: '#DBEAFE', dark: '#1E40AF' },
-    divider: '#E8EDF5',
+    success: { main: SUCCESS, light: '#DCFCE7', dark: '#14532D' },
+    warning: { main: WARNING, light: '#FEF3C7', dark: '#7C2D12' },
+    error:   { main: DANGER,  light: '#FEE2E2', dark: '#7F1D1D' },
+    info:    { main: INFO,    light: '#DBEAFE', dark: '#1E3A8A' },
+    divider: BORDER,
   },
   typography: {
     fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif',
@@ -46,7 +66,7 @@ const theme = createTheme({
     h5: { fontWeight: 600 },
     h6: { fontWeight: 600 },
     subtitle1: { fontWeight: 500, lineHeight: 1.6 },
-    subtitle2: { fontWeight: 500, color: '#5A6A85' },
+    subtitle2: { fontWeight: 500, color: TEXT_MUTED },
     body1: { lineHeight: 1.7 },
     body2: { lineHeight: 1.6 },
     button: { fontWeight: 600, letterSpacing: '0.025em', textTransform: 'none' },
@@ -67,10 +87,10 @@ const theme = createTheme({
       styleOverrides: {
         '*': { boxSizing: 'border-box' },
         html: { scrollBehavior: 'smooth' },
-        body: { backgroundColor: '#F5F7FA' },
+        body: { backgroundColor: SURFACE },
         '::-webkit-scrollbar': { width: 6 },
-        '::-webkit-scrollbar-track': { background: '#F1F5F9' },
-        '::-webkit-scrollbar-thumb': { background: '#CBD5E1', borderRadius: 3 },
+        '::-webkit-scrollbar-track': { background: SURFACE_SUBTLE },
+        '::-webkit-scrollbar-thumb': { background: BORDER_STRONG, borderRadius: 3 },
       },
     },
     MuiButton: {
@@ -83,8 +103,8 @@ const theme = createTheme({
           '&:hover': { boxShadow: '0 4px 12px rgba(10,22,40,0.15)' },
         },
         containedPrimary: {
-          background: `linear-gradient(135deg, ${NAVY_MID} 0%, ${NAVY} 100%)`,
-          '&:hover': { background: `linear-gradient(135deg, ${NAVY} 0%, #060E1A 100%)` },
+          background: `linear-gradient(135deg, ${NAVY_LINE} 0%, ${NAVY} 100%)`,
+          '&:hover': { background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_DEEP} 100%)` },
         },
         containedSecondary: {
           background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
@@ -102,7 +122,7 @@ const theme = createTheme({
         root: {
           borderRadius: 16,
           boxShadow: '0 4px 24px rgba(10,22,40,0.06)',
-          border: '1px solid #E8EDF5',
+          border: `1px solid ${BORDER}`,
           overflow: 'hidden',
         },
       },
@@ -119,7 +139,7 @@ const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: 10,
-            backgroundColor: '#FAFBFD',
+            backgroundColor: '#F8FAFC',
             '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: GOLD },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: NAVY, borderWidth: 2 },
           },
@@ -135,7 +155,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           '& .MuiTableCell-head': {
-            backgroundColor: '#F0F4F8',
+            backgroundColor: SURFACE_SUBTLE,
             fontWeight: 700,
             color: NAVY,
             fontSize: '0.8rem',
@@ -183,4 +203,13 @@ const theme = createTheme({
 })
 
 export default theme
-export { NAVY, NAVY_LIGHT, NAVY_MID, GOLD, GOLD_LIGHT, GOLD_DARK, WHITE }
+export {
+  NAVY, NAVY_SURFACE, NAVY_LINE, NAVY_DEEP,
+  GOLD, GOLD_LIGHT, GOLD_DARK,
+  WHITE,
+  SURFACE, SURFACE_SUBTLE, BORDER, BORDER_STRONG,
+  TEXT_PRIMARY, TEXT_BODY, TEXT_MUTED, TEXT_SUBTLE,
+  INFO, SUCCESS, WARNING, DANGER,
+}
+// Legacy aliases (kept for backward compatibility — prefer the new names)
+export { NAVY_LINE as NAVY_LIGHT, NAVY_LINE as NAVY_MID }

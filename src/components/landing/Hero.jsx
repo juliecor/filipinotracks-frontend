@@ -10,7 +10,7 @@ import DescriptionIcon from '@mui/icons-material/Description'
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import SupportAgentIcon from '@mui/icons-material/SupportAgent'
-import { NAVY, GOLD, GOLD_LIGHT, NAVY_MID } from '../../theme/theme'
+import { NAVY, NAVY_SURFACE, NAVY_LINE, GOLD, GOLD_LIGHT, INFO } from '../../theme/theme'
 
 const heroServices = [
   { icon: <DescriptionIcon />, title: 'Title Verification', desc: 'Check title records and ownership details before moving forward.' },
@@ -32,7 +32,7 @@ export default function Hero() {
   return (
     <Box sx={{
       minHeight: '100vh',
-      background: `linear-gradient(135deg, ${NAVY} 0%, #0D2045 40%, ${NAVY_MID} 100%)`,
+      background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_SURFACE} 50%, ${NAVY_LINE} 100%)`,
       position: 'relative',
       overflow: 'hidden',
       display: 'flex',
@@ -44,7 +44,7 @@ export default function Hero() {
           <Box sx={{ position: 'absolute', top: '-20%', right: '-10%', width: 600, height: 600, borderRadius: '50%', background: `radial-gradient(circle, ${GOLD}22 0%, transparent 70%)` }} />
         </motion.div>
         <motion.div animate={{ scale: [1.2, 1, 1.2], opacity: [0.2, 0.4, 0.2] }} transition={{ duration: 10, repeat: Infinity, delay: 2 }}>
-          <Box sx={{ position: 'absolute', bottom: '-20%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle, #3B82F622 0%, transparent 70%)` }} />
+          <Box sx={{ position: 'absolute', bottom: '-20%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle, ${INFO}22 0%, transparent 70%)` }} />
         </motion.div>
         {/* Grid pattern */}
         <Box sx={{

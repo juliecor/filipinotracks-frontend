@@ -18,18 +18,22 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import DescriptionIcon from '@mui/icons-material/Description'
 import SupportAgentIcon from '@mui/icons-material/SupportAgent'
 import { useAuth } from '../../context/AuthContext'
-import { NAVY, GOLD } from '../../theme/theme'
+import {
+  NAVY, NAVY_SURFACE, NAVY_LINE, GOLD, GOLD_DARK,
+  INFO, SUCCESS, WARNING, DANGER,
+  SURFACE, SURFACE_SUBTLE, BORDER, TEXT_BODY, TEXT_MUTED, TEXT_SUBTLE,
+} from '../../theme/theme'
 import api from '../../api/axios'
 
 const STATUS_META = {
-  'submitted':                { label: 'Submitted',    color: '#8B5CF6' },
-  'under review':             { label: 'Under Review', color: '#3B82F6' },
-  'verification ongoing':     { label: 'Verifying',    color: '#06B6D4' },
-  'processing':               { label: 'Processing',   color: '#F59E0B' },
-  'waiting for requirements': { label: 'Waiting',      color: '#F97316' },
-  'approved':                 { label: 'Approved',     color: '#22C55E' },
-  'released':                 { label: 'Released',     color: '#16A34A' },
-  'rejected':                 { label: 'Rejected',     color: '#EF4444' },
+  'submitted':                { label: 'Submitted',    color: NAVY      },
+  'under review':             { label: 'Under Review', color: INFO      },
+  'verification ongoing':     { label: 'Verifying',    color: INFO      },
+  'processing':               { label: 'Processing',   color: WARNING   },
+  'waiting for requirements': { label: 'Waiting',      color: GOLD_DARK },
+  'approved':                 { label: 'Approved',     color: SUCCESS   },
+  'released':                 { label: 'Released',     color: SUCCESS   },
+  'rejected':                 { label: 'Rejected',     color: DANGER    },
 }
 
 const SERVICE_LABELS = {
@@ -44,7 +48,7 @@ const SERVICE_LABELS = {
 }
 
 function StatusBadge({ status }) {
-  const meta = STATUS_META[status] || { label: status, color: '#64748B' }
+  const meta = STATUS_META[status] || { label: status, color: TEXT_MUTED }
   return (
     <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.6, px: 1.2, py: 0.4,
       bgcolor: `${meta.color}14`, borderRadius: '6px', border: `1px solid ${meta.color}28` }}>
@@ -57,12 +61,12 @@ function StatusBadge({ status }) {
 function StatCard({ label, value, icon, color, delay, loading }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, type: 'spring', stiffness: 200 }}>
-      <Card sx={{ height: '100%', position: 'relative', overflow: 'hidden', boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7' }}>
+      <Card sx={{ height: '100%', position: 'relative', overflow: 'hidden', boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: `1px solid ${BORDER}` }}>
         <Box sx={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at top right, ${color}08 0%, transparent 70%)` }} />
         <CardContent sx={{ p: { xs: 2.5, md: 3 }, position: 'relative' }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
             <Box>
-              <Typography sx={{ color: '#8496AE', fontWeight: 700, fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', mb: 1.5 }}>
+              <Typography sx={{ color: TEXT_SUBTLE, fontWeight: 700, fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', mb: 1.5 }}>
                 {label}
               </Typography>
               {loading
@@ -88,10 +92,10 @@ function StatCard({ label, value, icon, color, delay, loading }) {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Title Verification',  icon: <VerifiedIcon />,       color: '#3B82F6' },
-  { label: 'Title Transfer',      icon: <CompareArrowsIcon />,   color: GOLD },
-  { label: 'Tax Declaration',     icon: <AccountBalanceIcon />,  color: '#22C55E' },
-  { label: 'Document Processing', icon: <DescriptionIcon />,     color: '#8B5CF6' },
+  { label: 'Title Verification',  icon: <VerifiedIcon />,        color: INFO    },
+  { label: 'Title Transfer',      icon: <CompareArrowsIcon />,   color: GOLD    },
+  { label: 'Tax Declaration',     icon: <AccountBalanceIcon />,  color: SUCCESS },
+  { label: 'Document Processing', icon: <DescriptionIcon />,     color: NAVY    },
 ]
 
 export default function ClientDashboard() {
@@ -116,11 +120,11 @@ export default function ClientDashboard() {
   const recent    = transactions.slice(0, 6)
 
   return (
-    <Box sx={{ minHeight: '100%', bgcolor: '#F4F6FA' }}>
+    <Box sx={{ minHeight: '100%', bgcolor: SURFACE }}>
 
       {/* ═══ Hero ═══ */}
       <Box sx={{
-        background: `linear-gradient(140deg, #1A3A6E 0%, #1E4A88 60%, #245AA0 100%)`,
+        background: `linear-gradient(140deg, ${NAVY} 0%, ${NAVY_SURFACE} 60%, ${NAVY_LINE} 100%)`,
         px: { xs: 3, sm: 4, md: 5 },
         pt: { xs: 4, md: 5 },
         pb: { xs: 5, md: 6.5 },
@@ -159,10 +163,10 @@ export default function ClientDashboard() {
         {/* Stat cards */}
         <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
           {[
-            { label: 'Active Transactions', value: active,    icon: <ReceiptLongIcon />,   color: '#3B82F6', delay: 0 },
-            { label: 'Pending Review',      value: pending,   icon: <PendingIcon />,        color: GOLD,      delay: 0.07 },
-            { label: 'In Processing',       value: inProcess, icon: <HourglassEmptyIcon />, color: '#F59E0B', delay: 0.14 },
-            { label: 'Completed',           value: completed, icon: <CheckCircleIcon />,    color: '#22C55E', delay: 0.21 },
+            { label: 'Active Transactions', value: active,    icon: <ReceiptLongIcon />,    color: INFO,    delay: 0 },
+            { label: 'Pending Review',      value: pending,   icon: <PendingIcon />,        color: GOLD,    delay: 0.07 },
+            { label: 'In Processing',       value: inProcess, icon: <HourglassEmptyIcon />, color: WARNING, delay: 0.14 },
+            { label: 'Completed',           value: completed, icon: <CheckCircleIcon />,    color: SUCCESS, delay: 0.21 },
           ].map(s => (
             <Grid item xs={6} lg={3} key={s.label}>
               <StatCard {...s} loading={loading} />
@@ -176,11 +180,11 @@ export default function ClientDashboard() {
           {/* Recent transactions */}
           <Grid item xs={12} lg={8}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
-              <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7' }}>
-                <Box sx={{ px: 3, py: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #EEF2F7' }}>
+              <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: `1px solid ${BORDER}` }}>
+                <Box sx={{ px: 3, py: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${BORDER}` }}>
                   <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 800, color: NAVY }}>Recent Transactions</Typography>
-                    <Typography variant="caption" sx={{ color: '#94A3B8' }}>{transactions.length} total requests</Typography>
+                    <Typography variant="caption" sx={{ color: TEXT_SUBTLE }}>{transactions.length} total requests</Typography>
                   </Box>
                   <Button endIcon={<ArrowForwardIcon />} size="small" onClick={() => navigate('/portal/transactions')}
                     sx={{ color: GOLD, fontWeight: 700, fontSize: '0.8rem', '&:hover': { bgcolor: `${GOLD}10` } }}>
@@ -200,12 +204,12 @@ export default function ClientDashboard() {
                   </Box>
                 ) : recent.length === 0 ? (
                   <Box sx={{ py: 10, textAlign: 'center' }}>
-                    <Box sx={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg, #EEF2F7 0%, #E2E8F0 100%)',
+                    <Box sx={{ width: 80, height: 80, borderRadius: '50%', background: `linear-gradient(135deg, ${SURFACE_SUBTLE} 0%, #DDE3EE 100%)`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2.5 }}>
-                      <ReceiptLongIcon sx={{ fontSize: 36, color: '#CBD5E1' }} />
+                      <ReceiptLongIcon sx={{ fontSize: 36, color: '#B3BECD' }} />
                     </Box>
-                    <Typography variant="h6" sx={{ color: '#334155', fontWeight: 700, mb: 0.5 }}>No transactions yet</Typography>
-                    <Typography variant="body2" sx={{ color: '#94A3B8', mb: 3, maxWidth: 320, mx: 'auto' }}>
+                    <Typography variant="h6" sx={{ color: TEXT_BODY, fontWeight: 700, mb: 0.5 }}>No transactions yet</Typography>
+                    <Typography variant="body2" sx={{ color: TEXT_SUBTLE, mb: 3, maxWidth: 320, mx: 'auto' }}>
                       Start by submitting your first property documentation request
                     </Typography>
                     <Button variant="contained" color="secondary" startIcon={<AddIcon />}
@@ -235,18 +239,18 @@ export default function ClientDashboard() {
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', fontSize: '0.82rem' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: TEXT_BODY, fontSize: '0.82rem' }}>
                                 {SERVICE_LABELS[tx.service_type] || tx.service_type}
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Typography variant="body2" sx={{ color: '#475569', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>
+                              <Typography variant="body2" sx={{ color: TEXT_BODY, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>
                                 {tx.registered_owner || tx.property_address || '—'}
                               </Typography>
                             </TableCell>
                             <TableCell><StatusBadge status={tx.status} /></TableCell>
                             <TableCell>
-                              <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                              <Typography variant="caption" sx={{ color: TEXT_SUBTLE }}>
                                 {new Date(tx.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </Typography>
                             </TableCell>
@@ -266,10 +270,10 @@ export default function ClientDashboard() {
 
               {/* Quick Actions */}
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-                <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7' }}>
+                <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: `1px solid ${BORDER}` }}>
                   <CardContent sx={{ p: 3 }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 800, color: NAVY, mb: 0.3 }}>Quick Actions</Typography>
-                    <Typography variant="caption" sx={{ color: '#94A3B8', display: 'block', mb: 2.5 }}>Start a new request quickly</Typography>
+                    <Typography variant="caption" sx={{ color: TEXT_SUBTLE, display: 'block', mb: 2.5 }}>Start a new request quickly</Typography>
                     <Stack spacing={1.5}>
                       {QUICK_ACTIONS.map((a, i) => (
                         <motion.div key={a.label} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + i * 0.06 }}>
@@ -277,7 +281,7 @@ export default function ClientDashboard() {
                             onClick={() => navigate('/portal/transactions/new')}
                             sx={{
                               display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5,
-                              borderRadius: 2, border: '1.5px solid #EEF2F7', cursor: 'pointer',
+                              borderRadius: 2, border: `1.5px solid ${BORDER}`, cursor: 'pointer',
                               transition: 'all 0.18s', bgcolor: 'white',
                               '&:hover': { borderColor: a.color, bgcolor: `${a.color}06`, transform: 'translateX(4px)', boxShadow: `0 4px 12px ${a.color}20` },
                             }}
@@ -285,8 +289,8 @@ export default function ClientDashboard() {
                             <Box sx={{ width: 38, height: 38, borderRadius: 1.5, bgcolor: `${a.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, '& svg': { color: a.color, fontSize: 18 } }}>
                               {a.icon}
                             </Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155', flex: 1 }}>{a.label}</Typography>
-                            <ArrowForwardIcon sx={{ fontSize: 14, color: '#CBD5E1' }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: TEXT_BODY, flex: 1 }}>{a.label}</Typography>
+                            <ArrowForwardIcon sx={{ fontSize: 14, color: '#B3BECD' }} />
                           </Box>
                         </motion.div>
                       ))}
@@ -298,7 +302,7 @@ export default function ClientDashboard() {
               {/* Help card */}
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                 <Card sx={{
-                  background: `linear-gradient(140deg, #1A3A6E 0%, #245AA0 100%)`,
+                  background: `linear-gradient(140deg, ${NAVY} 0%, ${NAVY_SURFACE} 100%)`,
                   border: 'none', boxShadow: `0 8px 32px ${NAVY}30`,
                 }}>
                   <CardContent sx={{ p: 3 }}>

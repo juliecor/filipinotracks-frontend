@@ -21,7 +21,7 @@ import MapIcon from '@mui/icons-material/Map'
 import HomeIcon from '@mui/icons-material/Home'
 import StarIcon from '@mui/icons-material/Star'
 import { useAuth } from '../../context/AuthContext'
-import { NAVY, GOLD } from '../../theme/theme'
+import { NAVY, NAVY_SURFACE, GOLD, GOLD_DARK, SURFACE, BORDER, TEXT_MUTED } from '../../theme/theme'
 import api from '../../api/axios'
 import ChatWidget from '../chat/ChatWidget'
 
@@ -92,7 +92,7 @@ export default function PortalLayout({ role = 'client' }) {
 
   /* ─── Sidebar ─── */
   const SidebarContent = () => (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#0F2444', overflow: 'hidden' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: NAVY_SURFACE, overflow: 'hidden' }}>
 
       {/* Logo */}
       <Box sx={{
@@ -103,7 +103,7 @@ export default function PortalLayout({ role = 'client' }) {
       }}>
         <Box sx={{
           width: 38, height: 38, borderRadius: '9px', flexShrink: 0,
-          background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`,
+          background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <Typography sx={{ color: NAVY, fontWeight: 900, fontSize: '0.85rem' }}>FT</Typography>
@@ -253,7 +253,7 @@ export default function PortalLayout({ role = 'client' }) {
       <Drawer
         variant="temporary" open={mobileOpen} onClose={() => setMobileOpen(false)}
         ModalProps={{ keepMounted: true }}
-        sx={{ display: { md: 'none' }, '& .MuiDrawer-paper': { width: DRAWER_WIDTH, bgcolor: '#0F2444', border: 'none' } }}
+        sx={{ display: { md: 'none' }, '& .MuiDrawer-paper': { width: DRAWER_WIDTH, bgcolor: NAVY_SURFACE, border: 'none' } }}
       >
         <SidebarContent />
       </Drawer>
@@ -262,11 +262,11 @@ export default function PortalLayout({ role = 'client' }) {
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden' }}>
 
         {/* Topbar */}
-        <AppBar position="static" elevation={0} sx={{ bgcolor: 'white', borderBottom: '1px solid #E8EDF5', color: NAVY, flexShrink: 0 }}>
+        <AppBar position="static" elevation={0} sx={{ bgcolor: 'white', borderBottom: `1px solid ${BORDER}`, color: NAVY, flexShrink: 0 }}>
           <Toolbar sx={{ px: { xs: 2, md: 2.5 }, minHeight: '56px !important' }}>
             <IconButton
               onClick={() => isMobile ? setMobileOpen(true) : setCollapsed(c => !c)}
-              sx={{ mr: 2, color: '#64748B', bgcolor: '#F8FAFC', borderRadius: 2, width: 36, height: 36 }}
+              sx={{ mr: 2, color: TEXT_MUTED, bgcolor: '#F8FAFC', borderRadius: 2, width: 36, height: 36 }}
             >
               {!collapsed || isMobile
                 ? <ChevronLeftIcon sx={{ fontSize: 20, transform: collapsed ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
@@ -283,12 +283,12 @@ export default function PortalLayout({ role = 'client' }) {
               <Chip
                 label={user?.roles?.[0]?.name?.toUpperCase()}
                 size="small"
-                sx={{ bgcolor: `${GOLD}18`, color: '#A8882A', fontWeight: 700, fontSize: '0.68rem', display: { xs: 'none', sm: 'flex' } }}
+                sx={{ bgcolor: `${GOLD}18`, color: GOLD_DARK, fontWeight: 700, fontSize: '0.68rem', display: { xs: 'none', sm: 'flex' } }}
               />
               <IconButton
                 component={Link}
                 to={role === 'admin' ? '/admin/announcements' : '/portal/notifications'}
-                sx={{ color: '#64748B', width: 36, height: 36 }}
+                sx={{ color: TEXT_MUTED, width: 36, height: 36 }}
               >
                 <Badge badgeContent={(unreadCount || 0) + (unreadMsgs || 0)} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 16, height: 16 } }}>
                   <NotificationsIcon sx={{ fontSize: 20 }} />
@@ -311,18 +311,18 @@ export default function PortalLayout({ role = 'client' }) {
           anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-          PaperProps={{ sx: { mt: 1, minWidth: 200, borderRadius: 2, boxShadow: '0 8px 32px rgba(10,22,40,0.12)', border: '1px solid #E8EDF5' } }}
+          PaperProps={{ sx: { mt: 1, minWidth: 200, borderRadius: 2, boxShadow: '0 8px 32px rgba(10,22,40,0.12)', border: `1px solid ${BORDER}` } }}
         >
           <Box sx={{ px: 2, py: 1.5 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: NAVY }}>{user?.name}</Typography>
-            <Typography variant="caption" sx={{ color: '#64748B' }}>{user?.email}</Typography>
+            <Typography variant="caption" sx={{ color: TEXT_MUTED }}>{user?.email}</Typography>
           </Box>
           <Divider />
           <MenuItem onClick={() => { setAnchorEl(null); navigate('/') }}>
-            <HomeIcon fontSize="small" sx={{ mr: 1.5, color: '#64748B' }} /> Back to Home
+            <HomeIcon fontSize="small" sx={{ mr: 1.5, color: TEXT_MUTED }} /> Back to Home
           </MenuItem>
           <MenuItem onClick={() => { setAnchorEl(null); navigate(settingsPath) }}>
-            <SettingsIcon fontSize="small" sx={{ mr: 1.5, color: '#64748B' }} /> Settings
+            <SettingsIcon fontSize="small" sx={{ mr: 1.5, color: TEXT_MUTED }} /> Settings
           </MenuItem>
           <MenuItem onClick={() => { setAnchorEl(null); handleLogout() }} sx={{ color: 'error.main' }}>
             <LogoutIcon fontSize="small" sx={{ mr: 1.5 }} /> Logout
@@ -330,7 +330,7 @@ export default function PortalLayout({ role = 'client' }) {
         </Menu>
 
         {/* Page content */}
-        <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#F5F7FA' }}>
+        <Box sx={{ flex: 1, overflow: 'auto', bgcolor: SURFACE }}>
           <Outlet />
         </Box>
       </Box>
