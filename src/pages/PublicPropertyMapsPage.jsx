@@ -19,14 +19,19 @@ import CloseIcon from '@mui/icons-material/Close'
 import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt'
 import PaletteIcon from '@mui/icons-material/Palette'
 import CheckIcon from '@mui/icons-material/Check'
-import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import LandingNav from '../components/landing/LandingNav'
+import PropertyCard from '../components/property/PropertyCard'
+import PropertyDetailPanel from '../components/property/PropertyDetailPanel'
+import FilterChips, { applyFilters } from '../components/property/FilterChips'
 import {
-  NAVY, NAVY_SURFACE, GOLD, GOLD_DARK,
-  INFO, SUCCESS, WARNING, DANGER,
-  SURFACE_SUBTLE, BORDER, TEXT_BODY, TEXT_MUTED, TEXT_SUBTLE,
+  NAVY, GOLD, GOLD_DARK,
+  INFO, SUCCESS,
+  SURFACE_SUBTLE, BORDER, TEXT_MUTED, TEXT_SUBTLE,
 } from '../theme/theme'
 import { MAP_THEMES, getMapStyle } from '../utils/mapStyles'
+import {
+  STATUS_META, getCenter, getPolygonPoints, getCenterAndZoom,
+} from '../utils/propertyGeo'
 import api from '../api/axios'
 
 const LIBRARIES = ['places']
@@ -37,114 +42,6 @@ const SIDEBAR_WIDTH = 380
 const POLY_DEFAULT = { fillColor: GOLD, fillOpacity: 0.22, strokeColor: GOLD, strokeOpacity: 0.9, strokeWeight: 2 }
 const POLY_ACTIVE  = { fillColor: INFO, fillOpacity: 0.32, strokeColor: INFO, strokeOpacity: 1,    strokeWeight: 3 }
 
-const STATUS_META = {
-  'submitted':                { label: 'Submitted',    color: NAVY      },
-  'under review':             { label: 'Under Review', color: INFO      },
-  'verification ongoing':     { label: 'Verifying',    color: INFO      },
-  'processing':               { label: 'Processing',   color: WARNING   },
-  'waiting for requirements': { label: 'Waiting',      color: GOLD_DARK },
-  'approved':                 { label: 'Approved',     color: SUCCESS   },
-  'released':                 { label: 'Released',     color: SUCCESS   },
-  'rejected':                 { label: 'Rejected',     color: DANGER    },
-}
-
-function getCenter(m) {
-  if (m.latitude && m.longitude) return { lat: parseFloat(m.latitude), lng: parseFloat(m.longitude) }
-  const coords = m.geojson_polygon?.geometry?.coordinates?.[0]
-  if (coords?.length > 2) return {
-    lat: coords.reduce((s, [, la]) => s + la, 0) / coords.length,
-    lng: coords.reduce((s, [lo])   => s + lo, 0) / coords.length,
-  }
-  return null
-}
-
-function getPolygonPoints(m) {
-  const coords = m.geojson_polygon?.geometry?.coordinates?.[0]
-  if (!coords || coords.length < 3) return []
-  return coords.map(([lo, la]) => ({ lat: la, lng: lo }))
-}
-
-/* ──────────────────────────────────────────────────────────────
-   Compact property card (sidebar + bottom sheet)
-   ────────────────────────────────────────────────────────────── */
-function PropertyCard({ m, isActive, onClick }) {
-  const status = m.transaction?.status
-  const meta   = STATUS_META[status]
-  const pts    = getPolygonPoints(m)
-  const hasGeo = m.latitude || pts.length > 2
-  return (
-    <Box
-      onClick={onClick}
-      role="button"
-      tabIndex={0}
-      sx={{
-        p: 1.75,
-        borderRadius: 2,
-        cursor: hasGeo ? 'pointer' : 'default',
-        border: '1.5px solid',
-        borderColor: isActive ? GOLD : BORDER,
-        bgcolor: isActive ? `${GOLD}0E` : 'white',
-        transition: 'border-color 0.15s, background 0.15s, transform 0.15s',
-        '&:hover': hasGeo ? {
-          borderColor: isActive ? GOLD : '#CFD7E3',
-          bgcolor: isActive ? `${GOLD}14` : '#F8FAFC',
-          transform: 'translateX(2px)',
-        } : {},
-      }}
-    >
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 0.5, gap: 1 }}>
-        <Typography sx={{ fontWeight: 800, color: NAVY, fontSize: '0.875rem', lineHeight: 1.3, flex: 1 }}>
-          {m.registered_owner || 'Unknown Owner'}
-        </Typography>
-        {isActive && <ChevronRightIcon sx={{ fontSize: 18, color: GOLD, flexShrink: 0, mt: 0.2 }} />}
-      </Box>
-
-      {m.title_number && (
-        <Typography sx={{ fontSize: '0.7rem', fontFamily: 'monospace', color: TEXT_MUTED, mb: 0.8 }}>
-          {m.title_number}
-        </Typography>
-      )}
-
-      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 0.8 }}>
-        {m.city_municipality && (
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3, fontSize: '0.7rem', color: TEXT_MUTED }}>
-            <LocationOnIcon sx={{ fontSize: 12 }} />
-            {[m.city_municipality, m.province].filter(Boolean).join(', ')}
-          </Box>
-        )}
-      </Box>
-
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1 }}>
-        <Box sx={{ display: 'flex', gap: 0.6, flexWrap: 'wrap' }}>
-          {m.land_area && (
-            <Chip
-              label={`${parseFloat(m.land_area).toLocaleString()} sqm`}
-              size="small"
-              sx={{ fontSize: '0.62rem', fontWeight: 700, height: 18, bgcolor: `${INFO}12`, color: INFO }}
-            />
-          )}
-          {m.property_type && (
-            <Chip
-              label={m.property_type}
-              size="small"
-              sx={{ fontSize: '0.62rem', fontWeight: 700, height: 18, bgcolor: SURFACE_SUBTLE, color: TEXT_BODY, textTransform: 'capitalize' }}
-            />
-          )}
-        </Box>
-        {meta && (
-          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, flexShrink: 0 }}>
-            <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: meta.color }} />
-            <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: meta.color }}>{meta.label}</Typography>
-          </Box>
-        )}
-      </Box>
-    </Box>
-  )
-}
-
-/* ──────────────────────────────────────────────────────────────
-   Floating stat pill
-   ────────────────────────────────────────────────────────────── */
 function StatPill({ icon, value, label, color }) {
   return (
     <Box sx={{
@@ -172,9 +69,6 @@ function StatPill({ icon, value, label, color }) {
   )
 }
 
-/* ──────────────────────────────────────────────────────────────
-   Page
-   ────────────────────────────────────────────────────────────── */
 export default function PublicPropertyMapsPage() {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
@@ -182,13 +76,13 @@ export default function PublicPropertyMapsPage() {
   const mapRef   = useRef(null)
   const fsMapRef = useRef(null)
   const rowRefs  = useRef({})
-  const listScrollRef = useRef(null)
 
   const [maps, setMaps]         = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
   const [search, setSearch]     = useState('')
   const [fsSearch, setFsSearch] = useState('')
+  const [filters, setFilters]   = useState({ hasPin: false, hasBoundary: false, province: null })
   const [activeId, setActiveId] = useState(null)
   const [infoMap, setInfoMap]   = useState(null)
   const [mapType, setMapType]   = useState('hybrid')
@@ -218,10 +112,10 @@ export default function PublicPropertyMapsPage() {
   }
 
   const flyTo = (m, useFs = false) => {
-    const center = getCenter(m)
-    if (!center) return
     setActiveId(m.id)
     setInfoMap(m)
+    const center = getCenter(m)
+    if (!center) return
     const ref = useFs ? fsMapRef : mapRef
     if (!ref.current) return
 
@@ -243,6 +137,11 @@ export default function PublicPropertyMapsPage() {
     if (!useFs) rowRefs.current[m.id]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
+  const handleBack = () => {
+    setActiveId(null)
+    setInfoMap(null)
+  }
+
   const resetView = (useFs = false) => {
     setActiveId(null)
     setInfoMap(null)
@@ -254,6 +153,7 @@ export default function PublicPropertyMapsPage() {
   const pinned    = useMemo(() => maps.filter(m => m.latitude && m.longitude), [maps])
   const withBound = useMemo(() => maps.filter(m => m.geojson_polygon), [maps])
   const totalArea = useMemo(() => maps.reduce((s, m) => s + (parseFloat(m.land_area) || 0), 0), [maps])
+  const provinces = useMemo(() => maps.map(m => m.province), [maps])
 
   const makeFilter = (q) => (m) => !q ||
     m.registered_owner?.toLowerCase().includes(q) ||
@@ -263,14 +163,21 @@ export default function PublicPropertyMapsPage() {
     m.city_municipality?.toLowerCase().includes(q) ||
     m.barangay?.toLowerCase().includes(q)
 
-  const filtered   = useMemo(() => maps.filter(makeFilter(search.toLowerCase())),   [maps, search])
-  const fsFiltered = useMemo(() => maps.filter(makeFilter(fsSearch.toLowerCase())), [maps, fsSearch])
+  const filtered = useMemo(
+    () => applyFilters(maps, filters).filter(makeFilter(search.toLowerCase())),
+    [maps, filters, search]
+  )
+  const fsFiltered = useMemo(
+    () => applyFilters(maps, filters).filter(makeFilter(fsSearch.toLowerCase())),
+    [maps, filters, fsSearch]
+  )
 
-  const mapCenter = pinned.length
-    ? { lat: pinned.reduce((s, m) => s + parseFloat(m.latitude), 0) / pinned.length,
-        lng: pinned.reduce((s, m) => s + parseFloat(m.longitude), 0) / pinned.length }
-    : { lat: 12.8797, lng: 121.7740 }
-  const mapZoom = pinned.length === 1 ? 16 : pinned.length > 1 ? 7 : 6
+  const { center: mapCenter, zoom: mapZoom } = useMemo(() => getCenterAndZoom(maps), [maps])
+
+  const activeProperty = useMemo(
+    () => maps.find(m => m.id === activeId) || null,
+    [maps, activeId]
+  )
 
   function MapOverlays({ useFs = false }) {
     return maps.map(m => {
@@ -315,7 +222,6 @@ export default function PublicPropertyMapsPage() {
     })
   }
 
-  /* ── Floating map controls (top-left) ── */
   function MapControls({ useFs = false }) {
     const themeDisabled = mapType !== 'roadmap'
     return (
@@ -342,22 +248,18 @@ export default function PublicPropertyMapsPage() {
           </ToggleButtonGroup>
           <Tooltip title={themeDisabled ? 'Switch to Map view first' : 'Map theme'}>
             <Box>
-              <IconButton
-                size="small"
-                onClick={(e) => setThemeAnchor(e.currentTarget)}
+              <IconButton size="small" onClick={(e) => setThemeAnchor(e.currentTarget)}
                 sx={{
                   bgcolor: 'white', boxShadow: '0 4px 12px rgba(10,22,40,0.15)', borderRadius: 1.5,
                   width: 34, height: 34, opacity: themeDisabled ? 0.55 : 1,
                   '&:hover': { bgcolor: '#F8FAFC' },
-                }}
-              >
+                }}>
                 <PaletteIcon sx={{ fontSize: 17, color: themeDisabled ? TEXT_SUBTLE : NAVY }} />
               </IconButton>
             </Box>
           </Tooltip>
         </Box>
 
-        {/* top-right: reset + fullscreen */}
         <Box sx={{
           position: 'absolute',
           top: { xs: 10, md: 14 },
@@ -367,12 +269,8 @@ export default function PublicPropertyMapsPage() {
           gap: 0.8,
         }}>
           {activeId && (
-            <Chip
-              label="Reset"
-              size="small"
-              onClick={() => resetView(useFs)}
-              sx={{ fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', bgcolor: 'white', color: DANGER, boxShadow: '0 4px 12px rgba(10,22,40,0.15)', height: 30 }}
-            />
+            <Chip label="Reset" size="small" onClick={() => resetView(useFs)}
+              sx={{ fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', bgcolor: 'white', color: '#DC2626', boxShadow: '0 4px 12px rgba(10,22,40,0.15)', height: 30 }} />
           )}
           {useFs ? (
             <Tooltip title="Exit fullscreen">
@@ -396,10 +294,8 @@ export default function PublicPropertyMapsPage() {
 
   const navHeight = isMobile ? NAVBAR_HEIGHT_MOBILE : NAVBAR_HEIGHT_DESKTOP
 
-  /* ──────────────────────────────────────────────────────────
-     Sidebar / bottom-sheet content
-     ────────────────────────────────────────────────────────── */
-  const sidebar = (
+  /* ────── Sidebar — list view ────── */
+  const listView = (
     <Box sx={{
       width: '100%',
       height: '100%',
@@ -426,31 +322,29 @@ export default function PublicPropertyMapsPage() {
         </Typography>
       </Box>
 
-      {/* Stats row */}
+      {/* Stats */}
       <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.5, display: 'flex', gap: 1, borderBottom: `1px solid ${BORDER}`, bgcolor: '#FAFBFD' }}>
         <StatPill icon={<HomeWorkIcon sx={{ fontSize: 16 }} />}   value={loading ? '—' : maps.length}      label="Total"   color={NAVY}    />
         <StatPill icon={<LocationOnIcon sx={{ fontSize: 16 }} />} value={loading ? '—' : pinned.length}    label="Pinned"  color={SUCCESS} />
         <StatPill icon={<PolylineIcon sx={{ fontSize: 16 }} />}   value={loading ? '—' : withBound.length} label="Mapped"  color={GOLD}    />
       </Box>
 
+      {/* Filters */}
+      <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.2, borderBottom: `1px solid ${BORDER}` }}>
+        <FilterChips filters={filters} onChange={setFilters} provinces={provinces} />
+      </Box>
+
       {/* Search */}
       <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.5, borderBottom: `1px solid ${BORDER}` }}>
         <TextField
-          fullWidth
-          size="small"
-          placeholder="Search owner, title, location…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          sx={{
-            '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#F6F8FB', fontSize: '0.88rem' },
-          }}
-          InputProps={{
-            startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: TEXT_SUBTLE }} /></InputAdornment>,
-          }}
+          fullWidth size="small" placeholder="Search owner, title, location…"
+          value={search} onChange={e => setSearch(e.target.value)}
+          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#F6F8FB', fontSize: '0.88rem' } }}
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: TEXT_SUBTLE }} /></InputAdornment> }}
         />
       </Box>
 
-      {/* Result count + total area */}
+      {/* Count */}
       <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           {filtered.length} {filtered.length === 1 ? 'result' : 'results'}
@@ -466,21 +360,13 @@ export default function PublicPropertyMapsPage() {
       </Box>
 
       {/* List */}
-      <Box
-        ref={listScrollRef}
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: 'auto',
-          px: { xs: 2, md: 2.5 },
-          pb: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 1,
-          '&::-webkit-scrollbar': { width: 5 },
-          '&::-webkit-scrollbar-thumb': { bgcolor: BORDER, borderRadius: 4 },
-        }}
-      >
+      <Box sx={{
+        flex: 1, minHeight: 0, overflowY: 'auto',
+        px: { xs: 2, md: 2.5 }, pb: 2,
+        display: 'flex', flexDirection: 'column', gap: 1,
+        '&::-webkit-scrollbar': { width: 5 },
+        '&::-webkit-scrollbar-thumb': { bgcolor: BORDER, borderRadius: 4 },
+      }}>
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} variant="rounded" height={92} sx={{ borderRadius: 2 }} />
@@ -491,7 +377,7 @@ export default function PublicPropertyMapsPage() {
           <Box sx={{ py: 6, textAlign: 'center' }}>
             <HomeWorkIcon sx={{ fontSize: 36, color: '#CBD5E1', display: 'block', mx: 'auto', mb: 1 }} />
             <Typography variant="body2" sx={{ color: TEXT_MUTED, fontWeight: 600, mb: 0.5 }}>No properties found</Typography>
-            <Typography variant="caption" sx={{ color: TEXT_SUBTLE }}>Try a different search term.</Typography>
+            <Typography variant="caption" sx={{ color: TEXT_SUBTLE }}>Try a different search term or clear filters.</Typography>
           </Box>
         ) : (
           filtered.map(m => (
@@ -508,9 +394,14 @@ export default function PublicPropertyMapsPage() {
     </Box>
   )
 
-  /* ──────────────────────────────────────────────────────────
-     Map element
-     ────────────────────────────────────────────────────────── */
+  const detailView = activeProperty && (
+    <PropertyDetailPanel
+      property={activeProperty}
+      onBack={handleBack}
+      onCenterOnMap={() => flyTo(activeProperty, false)}
+    />
+  )
+
   const mapElement = (
     <Box sx={{ position: 'relative', width: '100%', height: '100%', bgcolor: SURFACE_SUBTLE }}>
       {!isLoaded || loading ? (
@@ -536,18 +427,13 @@ export default function PublicPropertyMapsPage() {
   return (
     <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <LandingNav />
-
-      {/* Spacer for sticky nav */}
       <Box sx={{ height: navHeight, flexShrink: 0 }} />
 
-      {/* Main: sidebar + map (or stacked on mobile) */}
       <Box sx={{
-        flex: 1,
-        minHeight: 0,
-        display: 'flex',
+        flex: 1, minHeight: 0, display: 'flex',
         flexDirection: { xs: 'column', md: 'row' },
       }}>
-        {/* Sidebar (desktop: left fixed width, mobile: below map) */}
+        {/* Sidebar (list or detail) */}
         <Box sx={{
           width: { xs: '100%', md: SIDEBAR_WIDTH },
           flexShrink: 0,
@@ -556,7 +442,7 @@ export default function PublicPropertyMapsPage() {
           minHeight: { xs: '45vh', md: 'auto' },
           maxHeight: { xs: '55vh', md: 'none' },
         }}>
-          {sidebar}
+          {activeProperty ? detailView : listView}
         </Box>
 
         {/* Map */}
@@ -571,9 +457,7 @@ export default function PublicPropertyMapsPage() {
 
       {/* Map theme menu */}
       <Menu
-        anchorEl={themeAnchor}
-        open={Boolean(themeAnchor)}
-        onClose={() => setThemeAnchor(null)}
+        anchorEl={themeAnchor} open={Boolean(themeAnchor)} onClose={() => setThemeAnchor(null)}
         transformOrigin={{ horizontal: 'left', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
         PaperProps={{ sx: { mt: 0.5, minWidth: 180, borderRadius: 2, boxShadow: '0 8px 24px rgba(10,22,40,0.15)' } }}
@@ -584,24 +468,18 @@ export default function PublicPropertyMapsPage() {
           </Typography>
         </Box>
         {MAP_THEMES.map(t => (
-          <MenuItem
-            key={t.id}
-            selected={t.id === mapTheme}
-            onClick={() => handleThemeSelect(t.id)}
-            sx={{ fontSize: '0.85rem', fontWeight: t.id === mapTheme ? 700 : 500, color: NAVY, py: 1 }}
-          >
+          <MenuItem key={t.id} selected={t.id === mapTheme} onClick={() => handleThemeSelect(t.id)}
+            sx={{ fontSize: '0.85rem', fontWeight: t.id === mapTheme ? 700 : 500, color: NAVY, py: 1 }}>
             <Box sx={{ flex: 1 }}>{t.label}</Box>
             {t.id === mapTheme && <CheckIcon sx={{ fontSize: 16, color: GOLD, ml: 1 }} />}
           </MenuItem>
         ))}
       </Menu>
 
-      {/* ── FULLSCREEN DIALOG ── */}
+      {/* Fullscreen */}
       <Dialog fullScreen open={fullscreen} onClose={() => setFullscreen(false)}
         PaperProps={{ sx: { m: 0, borderRadius: 0, overflow: 'hidden' } }}>
         <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, height: '100vh', overflow: 'hidden' }}>
-
-          {/* Map side */}
           <Box sx={{ flex: 1, position: 'relative', minHeight: { xs: '50vh', md: 0 } }}>
             {isLoaded ? (
               <>
@@ -621,8 +499,6 @@ export default function PublicPropertyMapsPage() {
               </Box>
             )}
           </Box>
-
-          {/* Sidebar */}
           <Box sx={{
             width: { xs: '100%', md: SIDEBAR_WIDTH }, flexShrink: 0,
             height: { xs: '50vh', md: '100vh' },
@@ -645,17 +521,14 @@ export default function PublicPropertyMapsPage() {
                 </Tooltip>
               </Box>
             </Box>
-
             <Box sx={{ px: 2, py: 1.5, bgcolor: 'white', borderBottom: `1px solid ${BORDER}` }}>
               <TextField fullWidth size="small" placeholder="Search properties…" value={fsSearch} onChange={e => setFsSearch(e.target.value)}
                 sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#F6F8FB' } }}
                 InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 16, color: TEXT_SUBTLE }} /></InputAdornment> }} />
             </Box>
-
             <Box sx={{ flex: 1, overflowY: 'auto', px: 2, py: 1.5,
               '&::-webkit-scrollbar': { width: 4 },
-              '&::-webkit-scrollbar-thumb': { bgcolor: BORDER, borderRadius: 4 },
-            }}>
+              '&::-webkit-scrollbar-thumb': { bgcolor: BORDER, borderRadius: 4 } }}>
               <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.1em', mb: 1.2 }}>
                 All Properties ({fsFiltered.length})
               </Typography>
