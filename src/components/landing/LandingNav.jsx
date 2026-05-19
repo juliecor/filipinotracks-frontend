@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   AppBar, Toolbar, Typography, Button, Box, Container, IconButton,
   Drawer, List, ListItem, ListItemButton, ListItemText, Avatar,
@@ -13,6 +13,7 @@ import { useAuth } from '../../context/AuthContext'
 
 const navLinks = [
   { label: 'Services', href: '#services' },
+  { label: 'Properties', path: '/properties' },
   { label: 'Process', href: '#process' },
   { label: 'About', href: '#about' },
   { label: 'FAQ', href: '#faq' },
@@ -23,6 +24,7 @@ export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
 
   const dashboardPath = user?.roles?.[0]?.name === 'admin'
@@ -41,6 +43,18 @@ export default function LandingNav() {
     setDrawerOpen(false)
     const el = document.querySelector(href)
     if (el) el.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  const handleNavClick = (link) => {
+    setDrawerOpen(false)
+    if (link.path) {
+      navigate(link.path)
+    } else if (link.href) {
+      // If we're on the landing page, just scroll. Otherwise navigate home
+      // with the hash and let LandingPage scroll on mount.
+      if (location.pathname === '/') scrollTo(link.href)
+      else navigate('/' + link.href)
+    }
   }
 
   return (
@@ -91,7 +105,7 @@ export default function LandingNav() {
             {navLinks.map((link, i) => (
               <motion.div key={link.label} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.07 }}>
                 <Button
-                  onClick={() => scrollTo(link.href)}
+                  onClick={() => handleNavClick(link)}
                   sx={{
                     color: '#4A5568',
                     fontSize: '0.92rem',
@@ -193,7 +207,7 @@ export default function LandingNav() {
             {navLinks.map((link) => (
               <ListItem key={link.label} disablePadding>
                 <ListItemButton
-                  onClick={() => scrollTo(link.href)}
+                  onClick={() => handleNavClick(link)}
                   sx={{ borderRadius: 2, mb: 0.5, '&:hover': { bgcolor: 'rgba(201,168,76,0.12)' } }}
                 >
                   <ListItemText

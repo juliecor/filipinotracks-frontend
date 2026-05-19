@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Box, Container, Typography, Chip, Button, IconButton } from '@mui/material'
 import { motion, AnimatePresence } from 'framer-motion'
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp'
@@ -105,6 +105,18 @@ function ScrollToTop({ offset = false }) {
 
 export default function LandingPage() {
   const { user } = useAuth()
+  const location = useLocation()
+
+  // Scroll to hash when arriving from another route (e.g. /properties → /#process)
+  useEffect(() => {
+    if (!location.hash) return
+    const id = setTimeout(() => {
+      const el = document.querySelector(location.hash)
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    }, 50)
+    return () => clearTimeout(id)
+  }, [location.hash])
+
   return (
     <Box sx={{ width: '100%' }}>
       <LandingNav />

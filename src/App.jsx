@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
+import PublicPropertyMapsPage from './pages/PublicPropertyMapsPage'
 import PortalLayout from './components/portal/PortalLayout'
 
 // Client portal pages
@@ -59,6 +60,9 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />
         <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+
+        {/* Property registry (any authenticated user) */}
+        <Route path="/properties" element={<ProtectedRoute><PublicPropertyMapsPage /></ProtectedRoute>} />
 
         {/* Client Portal */}
         <Route path="/portal" element={<ProtectedRoute roles={['client']}><PortalLayout role="client" /></ProtectedRoute>}>
