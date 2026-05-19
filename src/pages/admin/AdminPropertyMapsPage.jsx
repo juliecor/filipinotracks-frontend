@@ -5,7 +5,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableRow, TableContainer,
   IconButton, Tooltip, CircularProgress, Alert, Skeleton,
   Dialog, DialogTitle, DialogContent, DialogActions, Button, Divider,
-  ToggleButton, ToggleButtonGroup,
+  ToggleButton, ToggleButtonGroup, Menu, MenuItem,
 } from '@mui/material'
 import {
   GoogleMap, Marker, Polygon, InfoWindow, useJsApiLoader,
@@ -24,7 +24,10 @@ import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import PaletteIcon from '@mui/icons-material/Palette'
+import CheckIcon from '@mui/icons-material/Check'
 import { NAVY, GOLD } from '../../theme/theme'
+import { MAP_THEMES, getMapStyle } from '../../utils/mapStyles'
 import api from '../../api/axios'
 
 const LIBRARIES = ['places']
@@ -139,6 +142,8 @@ export default function AdminPropertyMapsPage() {
   const [activeId, setActiveId] = useState(null)
   const [infoMap, setInfoMap]   = useState(null)
   const [mapType, setMapType]   = useState('hybrid')
+  const [mapTheme, setMapTheme] = useState('default')
+  const [themeAnchor, setThemeAnchor] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting]         = useState(false)
@@ -290,11 +295,19 @@ export default function AdminPropertyMapsPage() {
     })
   }
 
+  const handleThemeSelect = (themeId) => {
+    setMapTheme(themeId)
+    if (themeId !== 'default' && mapType !== 'roadmap') setMapType('roadmap')
+    setThemeAnchor(null)
+  }
+
   /* ── Map controls overlay ── */
   function MapControls({ useFs = false }) {
+    const themeDisabled = mapType !== 'roadmap'
+    const currentTheme = MAP_THEMES.find(t => t.id === mapTheme) || MAP_THEMES[0]
     return (
       <>
-        <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10 }}>
+        <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10, display: 'flex', gap: 1 }}>
           <ToggleButtonGroup value={mapType} exclusive onChange={(_, v) => v && setMapType(v)} size="small"
             sx={{ bgcolor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.18)', borderRadius: 1 }}>
             <ToggleButton value="hybrid"  sx={{ px: 1.5, fontSize: '0.72rem', fontWeight: 700 }}>
@@ -304,6 +317,21 @@ export default function AdminPropertyMapsPage() {
               <MapIcon sx={{ fontSize: 15, mr: 0.5 }} /> Map
             </ToggleButton>
           </ToggleButtonGroup>
+          <Tooltip title={themeDisabled ? 'Switch to Map view to use themes' : 'Map theme'}>
+            <Box>
+              <IconButton
+                size="small"
+                onClick={(e) => setThemeAnchor(e.currentTarget)}
+                sx={{
+                  bgcolor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.18)', borderRadius: 1,
+                  width: 36, height: 36, opacity: themeDisabled ? 0.55 : 1,
+                  '&:hover': { bgcolor: '#F8FAFC' },
+                }}
+              >
+                <PaletteIcon sx={{ fontSize: 17, color: themeDisabled ? '#94A3B8' : NAVY }} />
+              </IconButton>
+            </Box>
+          </Tooltip>
         </Box>
         <Box sx={{ position: 'absolute', top: 12, right: 12, zIndex: 10, display: 'flex', gap: 1 }}>
           {activeId && (
@@ -382,7 +410,7 @@ export default function AdminPropertyMapsPage() {
                 mapContainerStyle={{ width: '100%', height: 480 }}
                 center={mapCenter} zoom={mapZoom} mapTypeId={mapType}
                 onLoad={onMapLoad}
-                options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true }}
+                options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true, styles: getMapStyle(mapTheme) }}
               >
                 <MapOverlays useFs={false} />
               </GoogleMap>
@@ -406,9 +434,21 @@ export default function AdminPropertyMapsPage() {
             <Table stickyHeader size="small">
               <TableHead>
                 <TableRow>
-                  {['#', 'Registered Owner', 'Title Number', 'Lot / Block', 'Province', 'City / Municipality', 'Barangay', 'Type', 'Area (sqm)', 'Status', 'Map', ''].map(h => (
-                    <TableCell key={h} sx={{ fontWeight: 700, fontSize: '0.65rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', bgcolor: '#F8FAFC', whiteSpace: 'nowrap', py: 1.2 }}>{h}</TableCell>
-                  ))}
+                  {['#', 'Registered Owner', 'Title Number', 'Lot / Block', 'Province', 'City / Municipality', 'Barangay', 'Type', 'Area (sqm)', 'Status', 'Map', 'Actions'].map((h, idx) => {
+                    const isActions = idx === 11
+                    return (
+                      <TableCell key={h} sx={{
+                        fontWeight: 700, fontSize: '0.65rem', color: '#64748B', textTransform: 'uppercase',
+                        letterSpacing: '0.06em', bgcolor: '#F8FAFC', whiteSpace: 'nowrap', py: 1.2,
+                        textAlign: isActions ? 'center' : 'left',
+                        ...(isActions && {
+                          position: 'sticky', right: 0, zIndex: 3,
+                          borderLeft: '1px solid #E5EAF2',
+                          boxShadow: '-4px 0 8px rgba(10,22,40,0.04)',
+                        }),
+                      }}>{h}</TableCell>
+                    )
+                  })}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -458,25 +498,31 @@ export default function AdminPropertyMapsPage() {
                           {!m.latitude && !m.geojson_polygon && <Typography sx={{ fontSize: '0.72rem', color: '#CBD5E1' }}>—</Typography>}
                         </Box>
                       </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()} sx={{ pr: 1 }}>
-                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <TableCell onClick={e => e.stopPropagation()} sx={{
+                        pr: 1.5, pl: 1.5,
+                        position: 'sticky', right: 0, zIndex: 1,
+                        bgcolor: isActive ? '#F3F4F8' : 'white',
+                        borderLeft: '1px solid #E5EAF2',
+                        boxShadow: '-4px 0 8px rgba(10,22,40,0.04)',
+                      }}>
+                        <Box sx={{ display: 'flex', gap: 0.6, justifyContent: 'center' }}>
                           {canFly && (
                             <Tooltip title="Locate on map">
-                              <IconButton size="small" onClick={() => flyTo(m, false)} sx={{ bgcolor: `${GOLD}15`, '&:hover': { bgcolor: `${GOLD}30` } }}>
-                                <MyLocationIcon sx={{ fontSize: 13, color: '#A8882A' }} />
+                              <IconButton size="small" onClick={() => flyTo(m, false)} sx={{ bgcolor: `${GOLD}15`, width: 30, height: 30, '&:hover': { bgcolor: `${GOLD}30` } }}>
+                                <MyLocationIcon sx={{ fontSize: 16, color: '#A8882A' }} />
                               </IconButton>
                             </Tooltip>
                           )}
                           <Tooltip title="View transaction">
                             <IconButton size="small" onClick={() => navigate(`/admin/transactions/${m.transaction?.id}`)}
-                              sx={{ bgcolor: '#F4F6FA', '&:hover': { bgcolor: `${NAVY}10` } }}>
-                              <OpenInNewIcon sx={{ fontSize: 13, color: '#64748B' }} />
+                              sx={{ bgcolor: '#F1F4F9', width: 30, height: 30, '&:hover': { bgcolor: `${NAVY}10` } }}>
+                              <OpenInNewIcon sx={{ fontSize: 16, color: '#475569' }} />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Delete property">
                             <IconButton size="small" onClick={(e) => confirmDelete(e, m)}
-                              sx={{ bgcolor: '#FEE2E2', '&:hover': { bgcolor: '#FCA5A5' } }}>
-                              <DeleteOutlineIcon sx={{ fontSize: 14, color: '#DC2626' }} />
+                              sx={{ bgcolor: '#FEE2E2', width: 30, height: 30, '&:hover': { bgcolor: '#FCA5A5' } }}>
+                              <DeleteOutlineIcon sx={{ fontSize: 17, color: '#DC2626' }} />
                             </IconButton>
                           </Tooltip>
                         </Box>
@@ -489,6 +535,33 @@ export default function AdminPropertyMapsPage() {
           </TableContainer>
         </Paper>
       </Box>
+
+      {/* Map theme menu */}
+      <Menu
+        anchorEl={themeAnchor}
+        open={Boolean(themeAnchor)}
+        onClose={() => setThemeAnchor(null)}
+        transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+        PaperProps={{ sx: { mt: 0.5, minWidth: 180, borderRadius: 2, boxShadow: '0 8px 24px rgba(10,22,40,0.15)' } }}
+      >
+        <Box sx={{ px: 2, py: 1, borderBottom: '1px solid #EEF2F7' }}>
+          <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Map Theme
+          </Typography>
+        </Box>
+        {MAP_THEMES.map(t => (
+          <MenuItem
+            key={t.id}
+            selected={t.id === mapTheme}
+            onClick={() => handleThemeSelect(t.id)}
+            sx={{ fontSize: '0.85rem', fontWeight: t.id === mapTheme ? 700 : 500, color: NAVY, py: 1 }}
+          >
+            <Box sx={{ flex: 1 }}>{t.label}</Box>
+            {t.id === mapTheme && <CheckIcon sx={{ fontSize: 16, color: GOLD, ml: 1 }} />}
+          </MenuItem>
+        ))}
+      </Menu>
 
       {/* Delete confirmation */}
       <Dialog open={!!deleteTarget} onClose={() => !deleting && setDeleteTarget(null)} maxWidth="xs" fullWidth
@@ -556,7 +629,7 @@ export default function AdminPropertyMapsPage() {
                   mapContainerStyle={{ width: '100%', height: '100%' }}
                   center={mapCenter} zoom={mapZoom} mapTypeId={mapType}
                   onLoad={onFsMapLoad}
-                  options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true }}
+                  options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true, styles: getMapStyle(mapTheme) }}
                 >
                   <MapOverlays useFs />
                 </GoogleMap>

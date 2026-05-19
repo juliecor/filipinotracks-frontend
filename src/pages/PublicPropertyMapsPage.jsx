@@ -3,7 +3,7 @@ import {
   Box, Typography, Paper, Grid, Chip, TextField, InputAdornment,
   Table, TableBody, TableCell, TableHead, TableRow, TableContainer,
   IconButton, Tooltip, CircularProgress, Alert, Skeleton,
-  Dialog, ToggleButton, ToggleButtonGroup, Container,
+  Dialog, ToggleButton, ToggleButtonGroup, Container, Menu, MenuItem,
 } from '@mui/material'
 import {
   GoogleMap, Marker, Polygon, InfoWindow, useJsApiLoader,
@@ -19,6 +19,8 @@ import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import CloseIcon from '@mui/icons-material/Close'
 import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import PaletteIcon from '@mui/icons-material/Palette'
+import CheckIcon from '@mui/icons-material/Check'
 import LandingNav from '../components/landing/LandingNav'
 import LandingFooter from '../components/landing/LandingFooter'
 import {
@@ -26,6 +28,7 @@ import {
   INFO, SUCCESS, WARNING, DANGER,
   SURFACE, SURFACE_SUBTLE, BORDER, TEXT_BODY, TEXT_MUTED, TEXT_SUBTLE,
 } from '../theme/theme'
+import { MAP_THEMES, getMapStyle } from '../utils/mapStyles'
 import api from '../api/axios'
 
 const LIBRARIES = ['places']
@@ -138,7 +141,15 @@ export default function PublicPropertyMapsPage() {
   const [activeId, setActiveId] = useState(null)
   const [infoMap, setInfoMap]   = useState(null)
   const [mapType, setMapType]   = useState('hybrid')
+  const [mapTheme, setMapTheme] = useState('default')
+  const [themeAnchor, setThemeAnchor] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
+
+  const handleThemeSelect = (themeId) => {
+    setMapTheme(themeId)
+    if (themeId !== 'default' && mapType !== 'roadmap') setMapType('roadmap')
+    setThemeAnchor(null)
+  }
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -257,9 +268,10 @@ export default function PublicPropertyMapsPage() {
   }
 
   function MapControls({ useFs = false }) {
+    const themeDisabled = mapType !== 'roadmap'
     return (
       <>
-        <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10 }}>
+        <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10, display: 'flex', gap: 1 }}>
           <ToggleButtonGroup value={mapType} exclusive onChange={(_, v) => v && setMapType(v)} size="small"
             sx={{ bgcolor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.18)', borderRadius: 1 }}>
             <ToggleButton value="hybrid"  sx={{ px: 1.5, fontSize: '0.72rem', fontWeight: 700 }}>
@@ -269,6 +281,21 @@ export default function PublicPropertyMapsPage() {
               <MapIcon sx={{ fontSize: 15, mr: 0.5 }} /> Map
             </ToggleButton>
           </ToggleButtonGroup>
+          <Tooltip title={themeDisabled ? 'Switch to Map view to use themes' : 'Map theme'}>
+            <Box>
+              <IconButton
+                size="small"
+                onClick={(e) => setThemeAnchor(e.currentTarget)}
+                sx={{
+                  bgcolor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.18)', borderRadius: 1,
+                  width: 36, height: 36, opacity: themeDisabled ? 0.55 : 1,
+                  '&:hover': { bgcolor: '#F8FAFC' },
+                }}
+              >
+                <PaletteIcon sx={{ fontSize: 17, color: themeDisabled ? TEXT_SUBTLE : NAVY }} />
+              </IconButton>
+            </Box>
+          </Tooltip>
         </Box>
         <Box sx={{ position: 'absolute', top: 12, right: 12, zIndex: 10, display: 'flex', gap: 1 }}>
           {activeId && (
@@ -364,7 +391,7 @@ export default function PublicPropertyMapsPage() {
                 mapContainerStyle={{ width: '100%', height: 480 }}
                 center={mapCenter} zoom={mapZoom} mapTypeId={mapType}
                 onLoad={onMapLoad}
-                options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true }}
+                options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true, styles: getMapStyle(mapTheme) }}
               >
                 <MapOverlays useFs={false} />
               </GoogleMap>
@@ -460,6 +487,33 @@ export default function PublicPropertyMapsPage() {
 
       <LandingFooter />
 
+      {/* Map theme menu */}
+      <Menu
+        anchorEl={themeAnchor}
+        open={Boolean(themeAnchor)}
+        onClose={() => setThemeAnchor(null)}
+        transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+        PaperProps={{ sx: { mt: 0.5, minWidth: 180, borderRadius: 2, boxShadow: '0 8px 24px rgba(10,22,40,0.15)' } }}
+      >
+        <Box sx={{ px: 2, py: 1, borderBottom: `1px solid ${BORDER}` }}>
+          <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Map Theme
+          </Typography>
+        </Box>
+        {MAP_THEMES.map(t => (
+          <MenuItem
+            key={t.id}
+            selected={t.id === mapTheme}
+            onClick={() => handleThemeSelect(t.id)}
+            sx={{ fontSize: '0.85rem', fontWeight: t.id === mapTheme ? 700 : 500, color: NAVY, py: 1 }}
+          >
+            <Box sx={{ flex: 1 }}>{t.label}</Box>
+            {t.id === mapTheme && <CheckIcon sx={{ fontSize: 16, color: GOLD, ml: 1 }} />}
+          </MenuItem>
+        ))}
+      </Menu>
+
       {/* Fullscreen dialog */}
       <Dialog fullScreen open={fullscreen} onClose={() => setFullscreen(false)}
         PaperProps={{ sx: { m: 0, borderRadius: 0, overflow: 'hidden' } }}>
@@ -474,7 +528,7 @@ export default function PublicPropertyMapsPage() {
                   mapContainerStyle={{ width: '100%', height: '100%' }}
                   center={mapCenter} zoom={mapZoom} mapTypeId={mapType}
                   onLoad={onFsMapLoad}
-                  options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true }}
+                  options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true, styles: getMapStyle(mapTheme) }}
                 >
                   <MapOverlays useFs />
                 </GoogleMap>
