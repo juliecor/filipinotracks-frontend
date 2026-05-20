@@ -1,23 +1,21 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { ThemeProvider, CssBaseline } from '@mui/material'
+// Reduced to 3 weights (400 / 600 / 800) — saves ~80KB on initial load.
+// 500 and 700 weights auto-substitute from these via MUI typography.
 import '@fontsource/plus-jakarta-sans/400.css'
-import '@fontsource/plus-jakarta-sans/500.css'
 import '@fontsource/plus-jakarta-sans/600.css'
-import '@fontsource/plus-jakarta-sans/700.css'
 import '@fontsource/plus-jakarta-sans/800.css'
 import App from './App.jsx'
-import theme from './theme/theme.js'
+import { ColorModeProvider } from './context/ColorModeContext.jsx'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
+      <ColorModeProvider>
         <App />
-      </ThemeProvider>
+      </ColorModeProvider>
     </BrowserRouter>
   </StrictMode>,
 )

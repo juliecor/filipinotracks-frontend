@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Block authenticated portals from indexing
+Disallow: /portal/
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /login
+Disallow: /register
+
+# Sitemap
+Sitemap: https://filipinotracks.com/sitemap.xml

@@ -39,7 +39,7 @@ const contacts = [
 
 export default function Contact() {
   return (
-    <Box id="contact" sx={{ bgcolor: '#F0F4FA' }}>
+    <Box id="contact" sx={{ bgcolor: 'background.default' }}>
 
       {/* Header band */}
       <Box sx={{
@@ -92,13 +92,14 @@ export default function Contact() {
                 minHeight: { xs: 220, md: 235 },
                 height: '100%',
                 borderRadius: 2.5,
-                bgcolor: 'white',
-                border: '1.5px solid #E4EAF4',
+                bgcolor: 'background.paper',
+                border: '1.5px solid',
+                borderColor: 'divider',
                 position: 'relative',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                boxShadow: '0 2px 12px rgba(10,22,40,0.06)',
+                boxShadow: 1,
                 cursor: 'pointer',
                 transition: 'transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease',
                 '&:hover': {
@@ -123,13 +124,13 @@ export default function Contact() {
                 >
                   {c.icon}
                 </Box>
-                <Typography variant="h6" sx={{ color: NAVY, fontWeight: 700, mb: 1.2, fontSize: '1rem', lineHeight: 1.3 }}>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700, mb: 1.2, fontSize: '1rem', lineHeight: 1.3 }}>
                   {c.title}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#374151', fontWeight: 500, mb: 0.5 }}>
+                <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500, mb: 0.5 }}>
                   {c.line1}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#5A6A85' }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   {c.line2}
                 </Typography>
               </Box>

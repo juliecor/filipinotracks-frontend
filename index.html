@@ -2,11 +2,100 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Primary Meta -->
+    <title>FilipinoTracks | Philippine Property Documentation Platform</title>
+    <meta name="description" content="FilipinoTracks is the Philippines' most trusted property documentation and land title platform. Verify titles, process transfers, manage tax declarations and track every transaction online — all in one secure place." />
+    <meta name="keywords" content="Philippines property, land title verification Philippines, title transfer Philippines, real estate documentation, LRA, Torrens title, FilipinoTracks, property registry, tax declaration Philippines, mortgage annotation" />
+    <meta name="author" content="FilipinoTracks" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0B1424" media="(prefers-color-scheme: dark)" />
+
+    <!-- Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://filipinotracks.com/" />
+
+    <!-- Open Graph (Facebook, Messenger, LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FilipinoTracks" />
+    <meta property="og:title" content="FilipinoTracks | Philippine Property Documentation Platform" />
+    <meta property="og:description" content="Verify land titles, process transfers, and manage property documentation online. The Philippines' most trusted PropTech platform." />
+    <meta property="og:url" content="https://filipinotracks.com/" />
+    <meta property="og:image" content="https://filipinotracks.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_PH" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FilipinoTracks | Philippine Property Documentation Platform" />
+    <meta name="twitter:description" content="Verify land titles, process transfers, and manage property documentation online. The Philippines' most trusted PropTech platform." />
+    <meta name="twitter:image" content="https://filipinotracks.com/og-image.png" />
+
+    <!-- Mobile / PWA hints -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="FilipinoTracks" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Preconnect to speed up font/map loading -->
+    <link rel="preconnect" href="https://maps.googleapis.com" />
+    <link rel="preconnect" href="https://maps.gstatic.com" crossorigin />
+
+    <!-- Structured Data: Organization -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "FilipinoTracks",
+        "alternateName": "FT",
+        "url": "https://filipinotracks.com/",
+        "logo": "https://filipinotracks.com/favicon.svg",
+        "description": "The Philippines' most trusted property documentation and land title platform.",
+        "address": {
+          "@type": "PostalAddress",
+          "addressCountry": "PH",
+          "addressLocality": "Makati City",
+          "addressRegion": "Metro Manila"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "email": "info@filipinotracks.ph",
+          "areaServed": "PH",
+          "availableLanguage": ["English", "Filipino"]
+        },
+        "sameAs": []
+      }
+    </script>
+
+    <!-- Structured Data: WebSite (enables sitelinks search) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "FilipinoTracks",
+        "url": "https://filipinotracks.com/",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://filipinotracks.com/properties?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
   </head>
   <body>
+    <noscript>
+      <p style="padding:24px;font-family:sans-serif;text-align:center">
+        FilipinoTracks requires JavaScript to run. Please enable JavaScript in your browser.
+      </p>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

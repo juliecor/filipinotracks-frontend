@@ -23,7 +23,7 @@ const services = [
 
 export default function Services() {
   return (
-    <Box id="services" sx={{ bgcolor: SURFACE_SUBTLE }}>
+    <Box id="services" sx={{ bgcolor: 'background.default' }}>
       {/* Header band */}
       <Box sx={{
         background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_SURFACE} 60%, ${NAVY_LINE} 100%)`,
@@ -77,13 +77,14 @@ export default function Services() {
                   minHeight: { xs: 220, md: 235 },
                   height: '100%',
                   borderRadius: 2.5,
-                  bgcolor: 'white',
-                  border: '1.5px solid #E5EAF2',
+                  bgcolor: 'background.paper',
+                  border: '1.5px solid',
+                  borderColor: 'divider',
                   position: 'relative',
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  boxShadow: '0 2px 12px rgba(10,22,40,0.06)',
+                  boxShadow: 1,
                   cursor: 'pointer',
                   transition: 'transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease',
                   '&:hover': {
@@ -136,10 +137,10 @@ export default function Services() {
                     {service.icon}
                   </Box>
 
-                  <Typography variant="h6" sx={{ color: NAVY, fontWeight: 700, mb: 1.2, fontSize: '1rem', lineHeight: 1.3 }}>
+                  <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700, mb: 1.2, fontSize: '1rem', lineHeight: 1.3 }}>
                     {service.title}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: '#64748B', lineHeight: 1.75, flexGrow: 1 }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.75, flexGrow: 1 }}>
                     {service.desc}
                   </Typography>
                 </Box>

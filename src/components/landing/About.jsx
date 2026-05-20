@@ -15,7 +15,7 @@ const values = [
 
 export default function About() {
   return (
-    <Box id="about" sx={{ bgcolor: '#F5F7FA' }}>
+    <Box id="about" sx={{ bgcolor: 'background.default' }}>
 
       {/* Header band */}
       <Box sx={{
@@ -68,13 +68,14 @@ export default function About() {
                 minHeight: { xs: 220, md: 235 },
                 height: '100%',
                 borderRadius: 2.5,
-                bgcolor: 'white',
-                border: '1.5px solid #E4EAF4',
+                bgcolor: 'background.paper',
+                border: '1.5px solid',
+                borderColor: 'divider',
                 position: 'relative',
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
-                boxShadow: '0 2px 12px rgba(10,22,40,0.06)',
+                boxShadow: 1,
                 cursor: 'pointer',
                 transition: 'transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease',
                 '&:hover': {
@@ -99,10 +100,10 @@ export default function About() {
                 >
                   {v.icon}
                 </Box>
-                <Typography variant="h6" sx={{ color: NAVY, fontWeight: 700, mb: 1.2, fontSize: '1rem', lineHeight: 1.3 }}>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700, mb: 1.2, fontSize: '1rem', lineHeight: 1.3 }}>
                   {v.title}
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#5A6A85', lineHeight: 1.75, flexGrow: 1 }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.75, flexGrow: 1 }}>
                   {v.desc}
                 </Typography>
               </Box>

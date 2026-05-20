@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Box, Container, Typography, Chip, Accordion, AccordionSummary, AccordionDetails } from '@mui/material'
 import { motion } from 'framer-motion'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
-import { NAVY, GOLD } from '../../theme/theme'
+import { GOLD } from '../../theme/theme'
 
 const faqs = [
   { q: 'How long does a title transfer take?', a: 'Standard title transfer processing typically takes 30-60 business days depending on the LRA queue and completeness of documents. Our premium service can expedite this to 15-25 business days.' },
@@ -19,16 +19,15 @@ export default function FAQ() {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <Box id="faq" sx={{ py: { xs: 10, md: 14 }, bgcolor: 'white' }}>
+    <Box id="faq" sx={{ py: { xs: 10, md: 14 }, bgcolor: 'background.default' }}>
       <Container maxWidth="md">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <Box sx={{ textAlign: 'center', mb: 8 }}>
-            
             <Chip label="FAQ" sx={{ mb: 2, bgcolor: `${GOLD}18`, color: GOLD, fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.7rem' }} />
-            <Typography variant="h2" sx={{ color: NAVY, mb: 2, fontSize: { xs: '2rem', md: '2.8rem' } }}>
+            <Typography variant="h2" sx={{ color: 'text.primary', mb: 2, fontSize: { xs: '2rem', md: '2.8rem' } }}>
               Frequently Asked Questions
             </Typography>
-            <Typography variant="h6" sx={{ color: '#5A6A85', fontWeight: 400 }}>
+            <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400 }}>
               Everything you need to know about our services.
             </Typography>
           </Box>
@@ -42,16 +41,17 @@ export default function FAQ() {
                 onChange={() => setExpanded(expanded === i ? false : i)}
                 elevation={0}
                 sx={{
-                  mb: 1.5, border: '1px solid #E8EDF5', borderRadius: '12px !important',
+                  mb: 1.5, border: 1, borderColor: 'divider', borderRadius: '12px !important',
+                  bgcolor: 'background.paper',
                   '&:before': { display: 'none' },
-                  '&.Mui-expanded': { borderColor: `${GOLD}40`, boxShadow: `0 0 0 2px ${GOLD}15` },
+                  '&.Mui-expanded': { borderColor: `${GOLD}66`, boxShadow: `0 0 0 2px ${GOLD}1A` },
                 }}
               >
-                <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: expanded === i ? GOLD : '#5A6A85' }} />} sx={{ px: 3, py: 0.5 }}>
-                  <Typography variant="subtitle1" sx={{ color: NAVY, fontWeight: 600 }}>{faq.q}</Typography>
+                <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: expanded === i ? GOLD : 'text.secondary' }} />} sx={{ px: 3, py: 0.5 }}>
+                  <Typography variant="subtitle1" sx={{ color: 'text.primary', fontWeight: 600 }}>{faq.q}</Typography>
                 </AccordionSummary>
                 <AccordionDetails sx={{ px: 3, pb: 3 }}>
-                  <Typography variant="body1" sx={{ color: '#5A6A85', lineHeight: 1.8 }}>{faq.a}</Typography>
+                  <Typography variant="body1" sx={{ color: 'text.secondary', lineHeight: 1.8 }}>{faq.a}</Typography>
                 </AccordionDetails>
               </Accordion>
             </motion.div>

@@ -3,18 +3,15 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import VerifiedIcon from '@mui/icons-material/Verified'
-import {
-  NAVY, GOLD, GOLD_DARK, SUCCESS, INFO,
-  SURFACE_SUBTLE, BORDER, TEXT_BODY, TEXT_MUTED, TEXT_SUBTLE,
-} from '../../theme/theme'
+import { GOLD, GOLD_DARK, SUCCESS } from '../../theme/theme'
 import { STATUS_META, getPolygonPoints, getCenter } from '../../utils/propertyGeo'
 
 function DetailRow({ label, value, mono }) {
   if (!value && value !== 0) return null
   return (
-    <Box sx={{ display: 'flex', py: 0.9, gap: 1.5, borderBottom: `1px dashed ${BORDER}`, '&:last-of-type': { borderBottom: 'none' } }}>
+    <Box sx={{ display: 'flex', py: 0.9, gap: 1.5, borderBottom: '1px dashed', borderColor: 'divider', '&:last-of-type': { borderBottom: 'none' } }}>
       <Typography sx={{
-        fontSize: '0.66rem', fontWeight: 700, color: TEXT_SUBTLE,
+        fontSize: '0.66rem', fontWeight: 700, color: 'text.disabled',
         textTransform: 'uppercase', letterSpacing: '0.08em',
         flex: '0 0 38%',
         pt: 0.2,
@@ -22,7 +19,7 @@ function DetailRow({ label, value, mono }) {
         {label}
       </Typography>
       <Typography sx={{
-        fontSize: '0.85rem', fontWeight: 600, color: NAVY, flex: 1,
+        fontSize: '0.85rem', fontWeight: 600, color: 'text.primary', flex: 1,
         fontFamily: mono ? 'monospace' : undefined,
         textTransform: mono ? 'none' : 'capitalize',
         wordBreak: 'break-word',
@@ -64,7 +61,7 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
     <Box sx={{
       width: '100%',
       height: '100%',
-      bgcolor: 'white',
+      bgcolor: 'background.paper',
       display: 'flex',
       flexDirection: 'column',
     }}>
@@ -72,15 +69,15 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
       <Box sx={{
         display: 'flex', alignItems: 'center', gap: 1,
         px: { xs: 1.5, md: 2 }, py: 1.2,
-        borderBottom: `1px solid ${BORDER}`,
-        bgcolor: '#FAFBFD',
+        borderBottom: 1, borderColor: 'divider',
+        bgcolor: 'action.hover',
       }}>
         <Tooltip title="Back to list">
-          <IconButton onClick={onBack} size="small" sx={{ color: TEXT_MUTED }}>
+          <IconButton onClick={onBack} size="small" sx={{ color: 'text.secondary' }}>
             <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Tooltip>
-        <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>
+        <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>
           Property Details
         </Typography>
         {hasGeo && (
@@ -97,13 +94,13 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
         flex: 1, minHeight: 0, overflowY: 'auto',
         px: { xs: 2, md: 2.5 }, py: 2,
         '&::-webkit-scrollbar': { width: 5 },
-        '&::-webkit-scrollbar-thumb': { bgcolor: BORDER, borderRadius: 4 },
+        '&::-webkit-scrollbar-thumb': { bgcolor: 'divider', borderRadius: 4 },
       }}>
         {/* Owner hero */}
-        <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: TEXT_SUBTLE, textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.5 }}>
+        <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.5 }}>
           Registered Owner
         </Typography>
-        <Typography sx={{ fontWeight: 800, color: NAVY, fontSize: '1.15rem', lineHeight: 1.25, mb: 1.2 }}>
+        <Typography sx={{ fontWeight: 800, color: 'text.primary', fontSize: '1.15rem', lineHeight: 1.25, mb: 1.2 }}>
           {property.registered_owner || 'Unknown Owner'}
         </Typography>
 
@@ -132,11 +129,11 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
         </Box>
 
         {property.transaction?.transaction_code && (
-          <Box sx={{ p: 1.5, mb: 2, borderRadius: 1.5, bgcolor: SURFACE_SUBTLE, border: `1px solid ${BORDER}` }}>
-            <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: TEXT_SUBTLE, textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.3 }}>
+          <Box sx={{ p: 1.5, mb: 2, borderRadius: 1.5, bgcolor: 'action.hover', border: 1, borderColor: 'divider' }}>
+            <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 0.3 }}>
               Transaction
             </Typography>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, color: NAVY }}>
+            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.82rem', fontWeight: 700, color: 'text.primary' }}>
               {property.transaction.transaction_code}
             </Typography>
           </Box>
@@ -172,15 +169,15 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
         {/* Verified info */}
         {property.verified_at && (
           <>
-            <Divider sx={{ my: 2, borderColor: BORDER }} />
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: `${SUCCESS}0F`, border: `1px solid ${SUCCESS}33`, borderRadius: 2 }}>
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, bgcolor: `${SUCCESS}14`, border: `1px solid ${SUCCESS}33`, borderRadius: 2 }}>
               <VerifiedIcon sx={{ color: SUCCESS, fontSize: 22 }} />
               <Box>
-                <Typography sx={{ fontWeight: 800, color: NAVY, fontSize: '0.82rem' }}>
+                <Typography sx={{ fontWeight: 800, color: 'text.primary', fontSize: '0.82rem' }}>
                   Verified on {new Date(property.verified_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </Typography>
                 {(property.verifiedBy?.name || property.verified_by_name) && (
-                  <Typography sx={{ fontSize: '0.72rem', color: TEXT_MUTED }}>
+                  <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
                     By {property.verifiedBy?.name || property.verified_by_name}
                   </Typography>
                 )}
@@ -192,8 +189,8 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
         {property.staff_notes && (
           <>
             <SectionHeader>Staff Notes</SectionHeader>
-            <Box sx={{ p: 1.5, bgcolor: '#FFFBEB', border: '1px solid #FCE7B5', borderRadius: 1.5 }}>
-              <Typography sx={{ fontSize: '0.82rem', color: '#7C2D12', lineHeight: 1.6 }}>
+            <Box sx={{ p: 1.5, bgcolor: 'warning.light', border: 1, borderColor: 'warning.main', borderRadius: 1.5 }}>
+              <Typography sx={{ fontSize: '0.82rem', color: 'warning.dark', lineHeight: 1.6 }}>
                 {property.staff_notes}
               </Typography>
             </Box>
@@ -203,7 +200,7 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
 
       {/* Action buttons */}
       {(hasGeo || actions) && (
-        <Box sx={{ p: 1.5, borderTop: `1px solid ${BORDER}`, bgcolor: 'white', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <Box sx={{ p: 1.5, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', gap: 1 }}>
           {hasGeo && (
             <Button
               variant="contained"

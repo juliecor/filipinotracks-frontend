@@ -61,17 +61,17 @@ function StatusBadge({ status }) {
 function StatCard({ label, value, icon, color, delay, loading }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, type: 'spring', stiffness: 200 }}>
-      <Card sx={{ height: '100%', position: 'relative', overflow: 'hidden', boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: `1px solid ${BORDER}` }}>
+      <Card sx={{ height: '100%', position: 'relative', overflow: 'hidden', boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: 1, borderColor: 'divider' }}>
         <Box sx={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at top right, ${color}08 0%, transparent 70%)` }} />
         <CardContent sx={{ p: { xs: 2.5, md: 3 }, position: 'relative' }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1 }}>
             <Box>
-              <Typography sx={{ color: TEXT_SUBTLE, fontWeight: 700, fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', mb: 1.5 }}>
+              <Typography sx={{ color: 'text.disabled', fontWeight: 700, fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase', mb: 1.5 }}>
                 {label}
               </Typography>
               {loading
                 ? <Skeleton width={56} height={36} />
-                : <Typography variant="h3" sx={{ fontWeight: 800, color: NAVY, lineHeight: 1 }}>{value}</Typography>
+                : <Typography variant="h3" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1 }}>{value}</Typography>
               }
             </Box>
             <Box sx={{
@@ -120,7 +120,7 @@ export default function ClientDashboard() {
   const recent    = transactions.slice(0, 6)
 
   return (
-    <Box sx={{ minHeight: '100%', bgcolor: SURFACE }}>
+    <Box sx={{ minHeight: '100%', bgcolor: 'background.default' }}>
 
       {/* ═══ Hero ═══ */}
       <Box sx={{
@@ -180,11 +180,11 @@ export default function ClientDashboard() {
           {/* Recent transactions */}
           <Grid item xs={12} lg={8}>
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
-              <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: `1px solid ${BORDER}` }}>
-                <Box sx={{ px: 3, py: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${BORDER}` }}>
+              <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: 1, borderColor: 'divider' }}>
+                <Box sx={{ px: 3, py: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: 1, borderColor: 'divider' }}>
                   <Box>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 800, color: NAVY }}>Recent Transactions</Typography>
-                    <Typography variant="caption" sx={{ color: TEXT_SUBTLE }}>{transactions.length} total requests</Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary' }}>Recent Transactions</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled' }}>{transactions.length} total requests</Typography>
                   </Box>
                   <Button endIcon={<ArrowForwardIcon />} size="small" onClick={() => navigate('/portal/transactions')}
                     sx={{ color: GOLD, fontWeight: 700, fontSize: '0.8rem', '&:hover': { bgcolor: `${GOLD}10` } }}>
@@ -206,10 +206,10 @@ export default function ClientDashboard() {
                   <Box sx={{ py: 10, textAlign: 'center' }}>
                     <Box sx={{ width: 80, height: 80, borderRadius: '50%', background: `linear-gradient(135deg, ${SURFACE_SUBTLE} 0%, #DDE3EE 100%)`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2.5 }}>
-                      <ReceiptLongIcon sx={{ fontSize: 36, color: '#B3BECD' }} />
+                      <ReceiptLongIcon sx={{ fontSize: 36, color: 'action.disabled' }} />
                     </Box>
-                    <Typography variant="h6" sx={{ color: TEXT_BODY, fontWeight: 700, mb: 0.5 }}>No transactions yet</Typography>
-                    <Typography variant="body2" sx={{ color: TEXT_SUBTLE, mb: 3, maxWidth: 320, mx: 'auto' }}>
+                    <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 700, mb: 0.5 }}>No transactions yet</Typography>
+                    <Typography variant="body2" sx={{ color: 'text.disabled', mb: 3, maxWidth: 320, mx: 'auto' }}>
                       Start by submitting your first property documentation request
                     </Typography>
                     <Button variant="contained" color="secondary" startIcon={<AddIcon />}
@@ -234,23 +234,23 @@ export default function ClientDashboard() {
                             style={{ cursor: 'pointer' }}
                             onClick={() => navigate(`/portal/transactions/${tx.id}`)}>
                             <TableCell>
-                              <Typography sx={{ fontWeight: 700, color: NAVY, fontFamily: 'monospace', fontSize: '0.8rem' }}>
+                              <Typography sx={{ fontWeight: 700, color: 'text.primary', fontFamily: 'monospace', fontSize: '0.8rem' }}>
                                 {tx.transaction_code}
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: TEXT_BODY, fontSize: '0.82rem' }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', fontSize: '0.82rem' }}>
                                 {SERVICE_LABELS[tx.service_type] || tx.service_type}
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Typography variant="body2" sx={{ color: TEXT_BODY, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>
+                              <Typography variant="body2" sx={{ color: 'text.primary', maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.82rem' }}>
                                 {tx.registered_owner || tx.property_address || '—'}
                               </Typography>
                             </TableCell>
                             <TableCell><StatusBadge status={tx.status} /></TableCell>
                             <TableCell>
-                              <Typography variant="caption" sx={{ color: TEXT_SUBTLE }}>
+                              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                                 {new Date(tx.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </Typography>
                             </TableCell>
@@ -270,10 +270,10 @@ export default function ClientDashboard() {
 
               {/* Quick Actions */}
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-                <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: `1px solid ${BORDER}` }}>
+                <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: 1, borderColor: 'divider' }}>
                   <CardContent sx={{ p: 3 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 800, color: NAVY, mb: 0.3 }}>Quick Actions</Typography>
-                    <Typography variant="caption" sx={{ color: TEXT_SUBTLE, display: 'block', mb: 2.5 }}>Start a new request quickly</Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 800, color: 'text.primary', mb: 0.3 }}>Quick Actions</Typography>
+                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mb: 2.5 }}>Start a new request quickly</Typography>
                     <Stack spacing={1.5}>
                       {QUICK_ACTIONS.map((a, i) => (
                         <motion.div key={a.label} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 + i * 0.06 }}>
@@ -281,16 +281,16 @@ export default function ClientDashboard() {
                             onClick={() => navigate('/portal/transactions/new')}
                             sx={{
                               display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5,
-                              borderRadius: 2, border: `1.5px solid ${BORDER}`, cursor: 'pointer',
-                              transition: 'all 0.18s', bgcolor: 'white',
+                              borderRadius: 2, border: '1.5px solid', borderColor: 'divider', cursor: 'pointer',
+                              transition: 'all 0.18s', bgcolor: 'background.paper',
                               '&:hover': { borderColor: a.color, bgcolor: `${a.color}06`, transform: 'translateX(4px)', boxShadow: `0 4px 12px ${a.color}20` },
                             }}
                           >
                             <Box sx={{ width: 38, height: 38, borderRadius: 1.5, bgcolor: `${a.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, '& svg': { color: a.color, fontSize: 18 } }}>
                               {a.icon}
                             </Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: TEXT_BODY, flex: 1 }}>{a.label}</Typography>
-                            <ArrowForwardIcon sx={{ fontSize: 14, color: '#B3BECD' }} />
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', flex: 1 }}>{a.label}</Typography>
+                            <ArrowForwardIcon sx={{ fontSize: 14, color: 'action.disabled' }} />
                           </Box>
                         </motion.div>
                       ))}

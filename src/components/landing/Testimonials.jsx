@@ -19,12 +19,12 @@ export default function Testimonials() {
   if (!loading && testimonials.length === 0) return null
 
   return (
-    <Box sx={{ py: { xs: 10, md: 14 }, bgcolor: '#F5F7FA' }}>
+    <Box sx={{ py: { xs: 10, md: 14 }, bgcolor: 'background.default' }}>
       <Container maxWidth="xl">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <Box sx={{ textAlign: 'center', mb: 8 }}>
             <Chip label="TESTIMONIALS" sx={{ mb: 2, bgcolor: `${GOLD}18`, color: GOLD, fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.7rem' }} />
-            <Typography variant="h2" sx={{ color: NAVY, mb: 2, fontSize: { xs: '2rem', md: '2.8rem' } }}>
+            <Typography variant="h2" sx={{ color: 'text.primary', mb: 2, fontSize: { xs: '2rem', md: '2.8rem' } }}>
               Trusted by Thousands of Filipinos
             </Typography>
           </Box>
@@ -41,16 +41,16 @@ export default function Testimonials() {
                 <Grid item xs={12} md={6} lg={4} key={t.id}>
                   <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} whileHover={{ y: -4 }}>
                     <Box sx={{
-                      p: 3.5, height: '100%', borderRadius: 3, bgcolor: 'white',
-                      border: '1px solid #E8EDF5', boxShadow: '0 4px 24px rgba(10,22,40,0.05)',
+                      p: 3.5, height: '100%', borderRadius: 3, bgcolor: 'background.paper',
+                      border: 1, borderColor: 'divider', boxShadow: 1,
                       position: 'relative',
                     }}>
                       <FormatQuoteIcon sx={{ color: `${GOLD}30`, fontSize: 48, position: 'absolute', top: 16, right: 16 }} />
                       <Rating value={t.rating} readOnly size="small" sx={{ mb: 2, '& .MuiRating-iconFilled': { color: GOLD } }} />
-                      <Typography variant="body1" sx={{ color: '#374151', lineHeight: 1.8, mb: 3, fontStyle: 'italic' }}>
+                      <Typography variant="body1" sx={{ color: 'text.primary', lineHeight: 1.8, mb: 3, fontStyle: 'italic' }}>
                         "{t.content}"
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pt: 2, borderTop: '1px solid #F0F4F8' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pt: 2, borderTop: 1, borderColor: 'divider' }}>
                         <Avatar
                           src={t.avatar_url || undefined}
                           sx={{ bgcolor: NAVY, color: GOLD, fontWeight: 700, width: 44, height: 44 }}
@@ -58,9 +58,9 @@ export default function Testimonials() {
                           {!t.avatar_url && t.name?.charAt(0)}
                         </Avatar>
                         <Box>
-                          <Typography variant="subtitle2" sx={{ color: NAVY, fontWeight: 700 }}>{t.name}</Typography>
+                          <Typography variant="subtitle2" sx={{ color: 'text.primary', fontWeight: 700 }}>{t.name}</Typography>
                           {t.role_label && (
-                            <Typography variant="caption" sx={{ color: '#5A6A85' }}>{t.role_label}</Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{t.role_label}</Typography>
                           )}
                         </Box>
                       </Box>

@@ -2,14 +2,17 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   AppBar, Toolbar, Typography, Button, Box, Container, IconButton,
-  Drawer, List, ListItem, ListItemButton, ListItemText, Avatar,
+  Drawer, List, ListItem, ListItemButton, ListItemText, Avatar, Tooltip,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import CloseIcon from '@mui/icons-material/Close'
 import DashboardIcon from '@mui/icons-material/Dashboard'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import LightModeIcon from '@mui/icons-material/LightMode'
 import { motion } from 'framer-motion'
 import { NAVY, GOLD, GOLD_DARK } from '../../theme/theme'
 import { useAuth } from '../../context/AuthContext'
+import { useColorMode } from '../../context/ColorModeContext'
 
 const navLinks = [
   { label: 'Services', href: '#services' },
@@ -26,6 +29,7 @@ export default function LandingNav() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const { mode, toggleMode } = useColorMode()
 
   const dashboardPath = user?.roles?.[0]?.name === 'admin'
     ? '/admin/dashboard'
@@ -57,17 +61,25 @@ export default function LandingNav() {
     }
   }
 
+  const isDark = mode === 'dark'
+
   return (
     <AppBar
       position="fixed"
       elevation={0}
       sx={{
-        backgroundColor: scrolled ? 'rgba(255,255,255,0.98)' : 'rgba(255,255,255,0.92)',
+        backgroundColor: isDark
+          ? (scrolled ? 'rgba(11,20,36,0.96)' : 'rgba(11,20,36,0.85)')
+          : (scrolled ? 'rgba(255,255,255,0.98)' : 'rgba(255,255,255,0.92)'),
         backdropFilter: 'blur(20px)',
-        borderBottom: `1px solid ${scrolled ? '#E8EDF5' : 'rgba(232,237,245,0.6)'}`,
-        transition: 'all 0.3s ease',
-        boxShadow: scrolled ? '0 2px 20px rgba(10,22,40,0.08)' : 'none',
+        borderBottom: 1,
+        borderColor: 'divider',
+        transition: 'background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease',
+        boxShadow: scrolled
+          ? (isDark ? '0 2px 20px rgba(0,0,0,0.5)' : '0 2px 20px rgba(10,22,40,0.08)')
+          : 'none',
         borderRadius: 0,
+        color: 'text.primary',
       }}
     >
       <Container maxWidth="xl">
@@ -88,7 +100,7 @@ export default function LandingNav() {
                 <Typography variant="h6" sx={{ color: NAVY, fontWeight: 900, fontSize: '1rem', lineHeight: 1 }}>FT</Typography>
               </Box>
               <Box>
-                <Typography variant="h6" sx={{ color: NAVY, fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.03em', fontSize: '1.75rem' }}>
+                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.03em', fontSize: '1.75rem' }}>
                   FilipinoTracks
                 </Typography>
                 <Typography variant="caption" sx={{ color: GOLD, letterSpacing: '0.14em', fontSize: '0.58rem', fontWeight: 700 }}>
@@ -107,11 +119,11 @@ export default function LandingNav() {
                 <Button
                   onClick={() => handleNavClick(link)}
                   sx={{
-                    color: '#4A5568',
+                    color: 'text.secondary',
                     fontSize: '0.92rem',
                     px: 2,
                     fontWeight: 500,
-                    '&:hover': { color: NAVY, backgroundColor: 'rgba(10,22,40,0.05)' },
+                    '&:hover': { color: 'text.primary', backgroundColor: 'action.hover' },
                   }}
                 >
                   {link.label}
@@ -119,7 +131,24 @@ export default function LandingNav() {
               </motion.div>
             ))}
 
-            <Box sx={{ width: 1, height: 22, bgcolor: 'rgba(10,22,40,0.12)', mx: 1.5 }} />
+            <Box sx={{ width: 1, height: 22, bgcolor: 'divider', mx: 1.5 }} />
+
+            <Tooltip title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+              <IconButton
+                onClick={toggleMode}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                sx={{
+                  color: isDark ? GOLD : 'text.primary',
+                  mr: 1,
+                  bgcolor: isDark ? 'rgba(201,162,74,0.12)' : 'action.hover',
+                  '&:hover': { bgcolor: isDark ? 'rgba(201,162,74,0.2)' : 'action.selected' },
+                }}
+              >
+                {isDark
+                  ? <LightModeIcon sx={{ fontSize: 20 }} />
+                  : <DarkModeIcon  sx={{ fontSize: 20 }} />}
+              </IconButton>
+            </Tooltip>
 
             {user ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
@@ -153,8 +182,8 @@ export default function LandingNav() {
                     variant="outlined"
                     onClick={() => navigate('/login')}
                     sx={{
-                      color: NAVY, borderColor: 'rgba(10,22,40,0.25)', borderWidth: '1.5px', mr: 1.5, px: 2.5,
-                      '&:hover': { borderColor: NAVY, color: NAVY, borderWidth: '1.5px', bgcolor: 'rgba(10,22,40,0.05)' },
+                      color: 'text.primary', borderColor: 'divider', borderWidth: '1.5px', mr: 1.5, px: 2.5,
+                      '&:hover': { borderColor: 'text.primary', color: 'text.primary', borderWidth: '1.5px', bgcolor: 'action.hover' },
                     }}
                   >
                     Login
@@ -179,13 +208,27 @@ export default function LandingNav() {
             )}
           </Box>
 
-          {/* Mobile hamburger */}
-          <IconButton
-            sx={{ display: { md: 'none' }, color: NAVY, ml: 1 }}
-            onClick={() => setDrawerOpen(true)}
-          >
-            <MenuIcon />
-          </IconButton>
+          {/* Mobile-only theme toggle + hamburger */}
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 0.5, ml: 'auto' }}>
+            <Tooltip title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
+              <IconButton
+                onClick={toggleMode}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                sx={{ color: isDark ? GOLD : 'text.primary' }}
+              >
+                {isDark
+                  ? <LightModeIcon sx={{ fontSize: 22 }} />
+                  : <DarkModeIcon  sx={{ fontSize: 22 }} />}
+              </IconButton>
+            </Tooltip>
+            <IconButton
+              aria-label="Open navigation menu"
+              sx={{ color: 'text.primary' }}
+              onClick={() => setDrawerOpen(true)}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Box>
         </Toolbar>
       </Container>
 
@@ -199,7 +242,7 @@ export default function LandingNav() {
         <Box sx={{ p: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
             <Typography variant="h6" sx={{ color: GOLD, fontWeight: 700 }}>FilipinoTracks</Typography>
-            <IconButton sx={{ color: 'white' }} onClick={() => setDrawerOpen(false)}>
+            <IconButton sx={{ color: 'white' }} aria-label="Close navigation menu" onClick={() => setDrawerOpen(false)}>
               <CloseIcon />
             </IconButton>
           </Box>

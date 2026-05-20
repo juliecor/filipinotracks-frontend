@@ -5,7 +5,7 @@ import PolylineIcon from '@mui/icons-material/Polyline'
 import ApartmentIcon from '@mui/icons-material/Apartment'
 import CloseIcon from '@mui/icons-material/Close'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import { NAVY, GOLD, GOLD_DARK, BORDER, TEXT_MUTED } from '../../theme/theme'
+import { GOLD, GOLD_DARK } from '../../theme/theme'
 
 /**
  * Quick-filter chip row. Filters combine (AND).
@@ -62,9 +62,10 @@ export default function FilterChips({ filters, onChange, provinces }) {
             fontSize: '0.7rem',
             fontWeight: 700,
             bgcolor: 'transparent',
-            color: TEXT_MUTED,
-            border: `1px dashed ${BORDER}`,
-            '& .MuiChip-deleteIcon': { color: TEXT_MUTED, '&:hover': { color: NAVY } },
+            color: 'text.secondary',
+            border: '1px dashed',
+            borderColor: 'divider',
+            '& .MuiChip-deleteIcon': { color: 'text.secondary', '&:hover': { color: 'text.primary' } },
           }}
         />
       )}
@@ -76,17 +77,17 @@ export default function FilterChips({ filters, onChange, provinces }) {
         onClose={() => setProvinceAnchor(null)}
         transformOrigin={{ horizontal: 'left', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
-        PaperProps={{ sx: { mt: 0.5, minWidth: 200, maxHeight: 320, borderRadius: 2, boxShadow: '0 8px 24px rgba(10,22,40,0.15)' } }}
+        PaperProps={{ sx: { mt: 0.5, minWidth: 200, maxHeight: 320, borderRadius: 2, boxShadow: 4 } }}
       >
-        <Box sx={{ px: 2, py: 1, borderBottom: `1px solid ${BORDER}` }}>
-          <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             Filter by Province
           </Typography>
         </Box>
         <MenuItem
           selected={!filters.province}
           onClick={() => setProvince(null)}
-          sx={{ fontSize: '0.85rem', fontWeight: !filters.province ? 700 : 500, color: NAVY, py: 1 }}
+          sx={{ fontSize: '0.85rem', fontWeight: !filters.province ? 700 : 500, color: 'text.primary', py: 1 }}
         >
           All provinces
         </MenuItem>
@@ -98,7 +99,7 @@ export default function FilterChips({ filters, onChange, provinces }) {
             key={p}
             selected={filters.province === p}
             onClick={() => setProvince(p)}
-            sx={{ fontSize: '0.85rem', fontWeight: filters.province === p ? 700 : 500, color: NAVY, py: 1 }}
+            sx={{ fontSize: '0.85rem', fontWeight: filters.province === p ? 700 : 500, color: 'text.primary', py: 1 }}
           >
             {p}
           </MenuItem>
@@ -126,12 +127,13 @@ function FilterChip({ label, icon, active, onClick, endAdornment }) {
         fontSize: '0.72rem',
         fontWeight: 700,
         transition: 'all 0.15s',
-        bgcolor: active ? `${GOLD}1F` : 'white',
-        color: active ? GOLD_DARK : TEXT_MUTED,
-        border: `1px solid ${active ? GOLD : BORDER}`,
+        bgcolor: active ? `${GOLD}1F` : 'background.paper',
+        color: active ? GOLD_DARK : 'text.secondary',
+        border: '1px solid',
+        borderColor: active ? GOLD : 'divider',
         '&:hover': {
-          bgcolor: active ? `${GOLD}2E` : '#F6F8FB',
-          borderColor: active ? GOLD : '#CFD7E3',
+          bgcolor: active ? `${GOLD}2E` : 'action.hover',
+          borderColor: active ? GOLD : 'action.disabled',
         },
       }}
     >

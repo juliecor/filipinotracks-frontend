@@ -1,34 +1,58 @@
+import { Suspense, lazy } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Box, CircularProgress } from '@mui/material'
 import { AuthProvider, useAuth } from './context/AuthContext'
+
+// Public landing pages — eager (need fast first paint, also small)
 import LandingPage from './pages/LandingPage'
+
+// Auth pages — lightweight, eager-load for snappy login
 import LoginPage from './pages/auth/LoginPage'
 import RegisterPage from './pages/auth/RegisterPage'
-import PublicPropertyMapsPage from './pages/PublicPropertyMapsPage'
+
+// Portal shell — kept eager (small wrapper)
 import PortalLayout from './components/portal/PortalLayout'
 
-// Client portal pages
-import ClientDashboard from './pages/portal/ClientDashboard'
-import TransactionsPage from './pages/portal/TransactionsPage'
-import NewTransactionPage from './pages/portal/NewTransactionPage'
-import TransactionDetailPage from './pages/portal/TransactionDetailPage'
-import TitleVerificationPage from './pages/portal/TitleVerificationPage'
-import DocumentsPage from './pages/portal/DocumentsPage'
-import NotificationsPage from './pages/portal/NotificationsPage'
-import MessagesPage from './pages/portal/MessagesPage'
-import SettingsPage from './pages/portal/SettingsPage'
-import TestimonialPage from './pages/portal/TestimonialPage'
+// ─── Heavy / authenticated routes — code-split ─────────────────────
+const PublicPropertyMapsPage = lazy(() => import('./pages/PublicPropertyMapsPage'))
 
-// Admin portal pages
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminUsersPage from './pages/admin/AdminUsersPage'
-import AdminTransactionsPage from './pages/admin/AdminTransactionsPage'
-import AdminAnnouncementsPage from './pages/admin/AdminAnnouncementsPage'
-import AdminTestimonialsPage from './pages/admin/AdminTestimonialsPage'
-import AdminPropertyMapsPage from './pages/admin/AdminPropertyMapsPage'
+// Client portal
+const ClientDashboard       = lazy(() => import('./pages/portal/ClientDashboard'))
+const TransactionsPage      = lazy(() => import('./pages/portal/TransactionsPage'))
+const NewTransactionPage    = lazy(() => import('./pages/portal/NewTransactionPage'))
+const TransactionDetailPage = lazy(() => import('./pages/portal/TransactionDetailPage'))
+const TitleVerificationPage = lazy(() => import('./pages/portal/TitleVerificationPage'))
+const DocumentsPage         = lazy(() => import('./pages/portal/DocumentsPage'))
+const NotificationsPage     = lazy(() => import('./pages/portal/NotificationsPage'))
+const MessagesPage          = lazy(() => import('./pages/portal/MessagesPage'))
+const SettingsPage          = lazy(() => import('./pages/portal/SettingsPage'))
+const TestimonialPage       = lazy(() => import('./pages/portal/TestimonialPage'))
 
-// Staff portal pages
-import StaffDashboard from './pages/staff/StaffDashboard'
-import StaffTransactionsPage from './pages/staff/StaffTransactionsPage'
+// Admin portal
+const AdminDashboard         = lazy(() => import('./pages/admin/AdminDashboard'))
+const AdminUsersPage         = lazy(() => import('./pages/admin/AdminUsersPage'))
+const AdminTransactionsPage  = lazy(() => import('./pages/admin/AdminTransactionsPage'))
+const AdminAnnouncementsPage = lazy(() => import('./pages/admin/AdminAnnouncementsPage'))
+const AdminTestimonialsPage  = lazy(() => import('./pages/admin/AdminTestimonialsPage'))
+const AdminPropertyMapsPage  = lazy(() => import('./pages/admin/AdminPropertyMapsPage'))
+
+// Staff portal
+const StaffDashboard        = lazy(() => import('./pages/staff/StaffDashboard'))
+const StaffTransactionsPage = lazy(() => import('./pages/staff/StaffTransactionsPage'))
+
+function RouteFallback() {
+  return (
+    <Box sx={{
+      minHeight: '60vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      bgcolor: 'background.default',
+    }}>
+      <CircularProgress sx={{ color: 'secondary.main' }} />
+    </Box>
+  )
+}
 
 function ProtectedRoute({ children, roles }) {
   const { user } = useAuth()
@@ -54,57 +78,59 @@ function GuestRoute({ children }) {
 function App() {
   return (
     <AuthProvider>
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />
-        <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+      <Suspense fallback={<RouteFallback />}>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />
+          <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
 
-        {/* Property registry (any authenticated user) */}
-        <Route path="/properties" element={<ProtectedRoute><PublicPropertyMapsPage /></ProtectedRoute>} />
+          {/* Property registry (any authenticated user) */}
+          <Route path="/properties" element={<ProtectedRoute><PublicPropertyMapsPage /></ProtectedRoute>} />
 
-        {/* Client Portal */}
-        <Route path="/portal" element={<ProtectedRoute roles={['client']}><PortalLayout role="client" /></ProtectedRoute>}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"           element={<ClientDashboard />} />
-          <Route path="transactions"            element={<TransactionsPage />} />
-          <Route path="transactions/new"        element={<NewTransactionPage />} />
-          <Route path="transactions/:id"        element={<TransactionDetailPage />} />
-          <Route path="title-verification"      element={<TitleVerificationPage />} />
-          <Route path="documents"           element={<DocumentsPage />} />
-          <Route path="notifications"       element={<NotificationsPage />} />
-          <Route path="messages"            element={<MessagesPage />} />
-          <Route path="review"              element={<TestimonialPage />} />
-          <Route path="settings"            element={<SettingsPage />} />
-        </Route>
+          {/* Client Portal */}
+          <Route path="/portal" element={<ProtectedRoute roles={['client']}><PortalLayout role="client" /></ProtectedRoute>}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard"           element={<ClientDashboard />} />
+            <Route path="transactions"            element={<TransactionsPage />} />
+            <Route path="transactions/new"        element={<NewTransactionPage />} />
+            <Route path="transactions/:id"        element={<TransactionDetailPage />} />
+            <Route path="title-verification"      element={<TitleVerificationPage />} />
+            <Route path="documents"           element={<DocumentsPage />} />
+            <Route path="notifications"       element={<NotificationsPage />} />
+            <Route path="messages"            element={<MessagesPage />} />
+            <Route path="review"              element={<TestimonialPage />} />
+            <Route path="settings"            element={<SettingsPage />} />
+          </Route>
 
-        {/* Admin Portal */}
-        <Route path="/admin" element={<ProtectedRoute roles={['admin']}><PortalLayout role="admin" /></ProtectedRoute>}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"           element={<AdminDashboard />} />
-          <Route path="users"               element={<AdminUsersPage />} />
-          <Route path="transactions"        element={<AdminTransactionsPage />} />
-          <Route path="transactions/:id"    element={<TransactionDetailPage />} />
-          <Route path="staff"               element={<AdminUsersPage />} />
-          <Route path="announcements"       element={<AdminAnnouncementsPage />} />
-          <Route path="testimonials"        element={<AdminTestimonialsPage />} />
-          <Route path="property-maps"       element={<AdminPropertyMapsPage />} />
-          <Route path="settings"            element={<SettingsPage />} />
-        </Route>
+          {/* Admin Portal */}
+          <Route path="/admin" element={<ProtectedRoute roles={['admin']}><PortalLayout role="admin" /></ProtectedRoute>}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard"           element={<AdminDashboard />} />
+            <Route path="users"               element={<AdminUsersPage />} />
+            <Route path="transactions"        element={<AdminTransactionsPage />} />
+            <Route path="transactions/:id"    element={<TransactionDetailPage />} />
+            <Route path="staff"               element={<AdminUsersPage />} />
+            <Route path="announcements"       element={<AdminAnnouncementsPage />} />
+            <Route path="testimonials"        element={<AdminTestimonialsPage />} />
+            <Route path="property-maps"       element={<AdminPropertyMapsPage />} />
+            <Route path="settings"            element={<SettingsPage />} />
+          </Route>
 
-        {/* Staff Portal */}
-        <Route path="/staff" element={<ProtectedRoute roles={['staff', 'agent']}><PortalLayout role="staff" /></ProtectedRoute>}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard"              element={<StaffDashboard />} />
-          <Route path="transactions"           element={<StaffTransactionsPage />} />
-          <Route path="transactions/:id"       element={<TransactionDetailPage />} />
-          <Route path="notifications"       element={<NotificationsPage />} />
-          <Route path="messages"            element={<MessagesPage />} />
-          <Route path="settings"            element={<SettingsPage />} />
-        </Route>
+          {/* Staff Portal */}
+          <Route path="/staff" element={<ProtectedRoute roles={['staff', 'agent']}><PortalLayout role="staff" /></ProtectedRoute>}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard"              element={<StaffDashboard />} />
+            <Route path="transactions"           element={<StaffTransactionsPage />} />
+            <Route path="transactions/:id"       element={<TransactionDetailPage />} />
+            <Route path="notifications"       element={<NotificationsPage />} />
+            <Route path="messages"            element={<MessagesPage />} />
+            <Route path="settings"            element={<SettingsPage />} />
+          </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </AuthProvider>
   )
 }

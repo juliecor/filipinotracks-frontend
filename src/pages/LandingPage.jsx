@@ -19,10 +19,12 @@ import { NAVY, GOLD, GOLD_LIGHT, GOLD_DARK } from '../theme/theme'
 function CTASection() {
   const navigate = useNavigate()
   return (
-    <Box sx={{
+    <Box sx={(theme) => ({
       py: { xs: 10, md: 14 },
-      background: `linear-gradient(135deg, #F0F4FF 0%, #FFF8E8 100%)`,
-    }}>
+      background: theme.palette.mode === 'dark'
+        ? `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`
+        : `linear-gradient(135deg, #F0F4FF 0%, #FFF8E8 100%)`,
+    })}>
       <Container maxWidth="md">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <Box sx={{ textAlign: 'center' }}>
@@ -30,10 +32,10 @@ function CTASection() {
               label="GET STARTED TODAY"
               sx={{ mb: 3, bgcolor: `${GOLD}18`, color: GOLD, fontWeight: 700, letterSpacing: '0.1em', fontSize: '0.7rem' }}
             />
-            <Typography variant="h2" sx={{ color: NAVY, mb: 3, fontSize: { xs: '2rem', md: '3rem' } }}>
+            <Typography variant="h2" sx={{ color: 'text.primary', mb: 3, fontSize: { xs: '2rem', md: '3rem' } }}>
               Ready to Process Your<br />Property Documents?
             </Typography>
-            <Typography variant="h6" sx={{ color: '#5A6A85', fontWeight: 400, mb: 5, lineHeight: 1.7 }}>
+            <Typography variant="h6" sx={{ color: 'text.secondary', fontWeight: 400, mb: 5, lineHeight: 1.7 }}>
               Join thousands of Filipinos who trust FilipinoTracks for their property documentation needs. Start your transaction today.
             </Typography>
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>

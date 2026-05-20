@@ -20,7 +20,10 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import MapIcon from '@mui/icons-material/Map'
 import HomeIcon from '@mui/icons-material/Home'
 import StarIcon from '@mui/icons-material/Star'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import LightModeIcon from '@mui/icons-material/LightMode'
 import { useAuth } from '../../context/AuthContext'
+import { useColorMode } from '../../context/ColorModeContext'
 import { NAVY, NAVY_SURFACE, GOLD, GOLD_DARK, SURFACE, BORDER, TEXT_MUTED } from '../../theme/theme'
 import api from '../../api/axios'
 import ChatWidget from '../chat/ChatWidget'
@@ -61,6 +64,7 @@ export default function PortalLayout({ role = 'client' }) {
   const [unreadCount, setUnreadCount]   = useState(0)
   const [unreadMsgs, setUnreadMsgs]     = useState(0)
   const { user, logout } = useAuth()
+  const { mode, toggleMode } = useColorMode()
 
   useEffect(() => {
     const fetchCounts = () => {
@@ -261,18 +265,19 @@ export default function PortalLayout({ role = 'client' }) {
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, height: '100vh', overflow: 'hidden' }}>
 
         {/* Topbar */}
-        <AppBar position="static" elevation={0} sx={{ bgcolor: 'white', borderBottom: `1px solid ${BORDER}`, color: NAVY, flexShrink: 0 }}>
+        <AppBar position="static" elevation={0} sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', color: 'text.primary', flexShrink: 0 }}>
           <Toolbar sx={{ px: { xs: 2, md: 2.5 }, minHeight: '56px !important' }}>
             <IconButton
               onClick={() => isMobile ? setMobileOpen(true) : setCollapsed(c => !c)}
-              sx={{ mr: 2, color: TEXT_MUTED, bgcolor: '#F8FAFC', borderRadius: 2, width: 36, height: 36 }}
+              aria-label={isMobile ? 'Open navigation menu' : (collapsed ? 'Expand sidebar' : 'Collapse sidebar')}
+              sx={{ mr: 2, color: 'text.secondary', bgcolor: 'action.hover', borderRadius: 2, width: 36, height: 36 }}
             >
               {!collapsed || isMobile
                 ? <ChevronLeftIcon sx={{ fontSize: 20, transform: collapsed ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
                 : <MenuIcon sx={{ fontSize: 20 }} />}
             </IconButton>
 
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: NAVY }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'text.primary' }}>
               {navItems.find(n => isActive(n.path))?.label || 'Portal'}
             </Typography>
 
@@ -284,16 +289,28 @@ export default function PortalLayout({ role = 'client' }) {
                 size="small"
                 sx={{ bgcolor: `${GOLD}18`, color: GOLD_DARK, fontWeight: 700, fontSize: '0.68rem', display: { xs: 'none', sm: 'flex' } }}
               />
+              <Tooltip title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+                <IconButton
+                  onClick={toggleMode}
+                  aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                  sx={{ color: mode === 'dark' ? GOLD : 'text.secondary', width: 36, height: 36 }}
+                >
+                  {mode === 'dark'
+                    ? <LightModeIcon sx={{ fontSize: 20 }} />
+                    : <DarkModeIcon  sx={{ fontSize: 20 }} />}
+                </IconButton>
+              </Tooltip>
               <IconButton
                 component={Link}
                 to={role === 'admin' ? '/admin/announcements' : '/portal/notifications'}
-                sx={{ color: TEXT_MUTED, width: 36, height: 36 }}
+                aria-label="Notifications"
+                sx={{ color: 'text.secondary', width: 36, height: 36 }}
               >
                 <Badge badgeContent={(unreadCount || 0) + (unreadMsgs || 0)} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', minWidth: 16, height: 16 } }}>
                   <NotificationsIcon sx={{ fontSize: 20 }} />
                 </Badge>
               </IconButton>
-              <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ p: 0.5 }}>
+              <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} aria-label="Open user menu" sx={{ p: 0.5 }}>
                 <Avatar
                   src={user?.profile_picture_url || undefined}
                   sx={{ width: 34, height: 34, bgcolor: NAVY, color: GOLD, fontWeight: 800, fontSize: '0.82rem' }}
@@ -310,15 +327,21 @@ export default function PortalLayout({ role = 'client' }) {
           anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-          PaperProps={{ sx: { mt: 1, minWidth: 200, borderRadius: 2, boxShadow: '0 8px 32px rgba(10,22,40,0.12)', border: `1px solid ${BORDER}` } }}
+          PaperProps={{ sx: { mt: 1, minWidth: 200, borderRadius: 2, boxShadow: 4, border: 1, borderColor: 'divider' } }}
         >
           <Box sx={{ px: 2, py: 1.5 }}>
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: NAVY }}>{user?.name}</Typography>
-            <Typography variant="caption" sx={{ color: TEXT_MUTED }}>{user?.email}</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary' }}>{user?.name}</Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>{user?.email}</Typography>
           </Box>
           <Divider />
           <MenuItem onClick={() => { setAnchorEl(null); navigate('/') }}>
             <HomeIcon fontSize="small" sx={{ mr: 1.5, color: TEXT_MUTED }} /> Back to Home
+          </MenuItem>
+          <MenuItem onClick={toggleMode}>
+            {mode === 'dark'
+              ? <LightModeIcon fontSize="small" sx={{ mr: 1.5, color: GOLD }} />
+              : <DarkModeIcon  fontSize="small" sx={{ mr: 1.5, color: TEXT_MUTED }} />}
+            {mode === 'dark' ? 'Light mode' : 'Dark mode'}
           </MenuItem>
           <MenuItem onClick={() => { setAnchorEl(null); navigate(settingsPath) }}>
             <SettingsIcon fontSize="small" sx={{ mr: 1.5, color: TEXT_MUTED }} /> Settings
@@ -329,7 +352,7 @@ export default function PortalLayout({ role = 'client' }) {
         </Menu>
 
         {/* Page content */}
-        <Box sx={{ flex: 1, overflow: 'auto', bgcolor: SURFACE }}>
+        <Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'background.default' }}>
           <Outlet />
         </Box>
       </Box>

@@ -10,6 +10,7 @@ import {
 import {
   GoogleMap, Marker, Polygon, InfoWindow, useJsApiLoader,
 } from '@react-google-maps/api'
+import { motion, AnimatePresence } from 'framer-motion'
 import SearchIcon from '@mui/icons-material/Search'
 import MapIcon from '@mui/icons-material/Map'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
@@ -49,8 +50,8 @@ function StatPill({ icon, value, label, color }) {
     <Box sx={{
       flex: 1, minWidth: 0,
       px: 1.5, py: 1.2,
-      bgcolor: 'white',
-      border: `1px solid ${BORDER}`,
+      bgcolor: 'background.paper',
+      border: 1, borderColor: 'divider',
       borderRadius: 2,
       display: 'flex',
       alignItems: 'center',
@@ -328,21 +329,22 @@ export default function AdminPropertyMapsPage() {
   const listView = (
     <Box sx={{
       width: '100%', height: '100%',
-      bgcolor: 'white', display: 'flex', flexDirection: 'column',
-      borderRight: { xs: 'none', md: `1px solid ${BORDER}` },
-      borderTop:   { xs: `1px solid ${BORDER}`, md: 'none' },
+      bgcolor: 'background.paper', display: 'flex', flexDirection: 'column',
+      borderRight: { xs: 'none', md: 1 },
+      borderTop:   { xs: 1, md: 'none' },
+      borderColor: 'divider',
     }}>
       {/* Header */}
-      <Box sx={{ px: { xs: 2, md: 2.5 }, pt: { xs: 2, md: 2.5 }, pb: 1.5, borderBottom: `1px solid ${BORDER}` }}>
+      <Box sx={{ px: { xs: 2, md: 2.5 }, pt: { xs: 2, md: 2.5 }, pb: 1.5, borderBottom: 1, borderColor: 'divider' }}>
         <Chip
           label="ADMIN REGISTRY"
           size="small"
           sx={{ mb: 1, bgcolor: `${GOLD}1F`, color: GOLD_DARK, fontWeight: 800, fontSize: '0.6rem', letterSpacing: '0.12em', height: 20 }}
         />
-        <Typography sx={{ fontWeight: 800, color: NAVY, fontSize: { xs: '1.15rem', md: '1.35rem' }, lineHeight: 1.2, mb: 0.5 }}>
+        <Typography sx={{ fontWeight: 800, color: 'text.primary', fontSize: { xs: '1.15rem', md: '1.35rem' }, lineHeight: 1.2, mb: 0.5 }}>
           Property Land Registry
         </Typography>
-        <Typography sx={{ color: TEXT_MUTED, fontSize: '0.8rem', lineHeight: 1.5 }}>
+        <Typography sx={{ color: 'text.secondary', fontSize: '0.8rem', lineHeight: 1.5 }}>
           {loading
             ? 'Loading…'
             : `${maps.length} ${maps.length === 1 ? 'record' : 'records'} · manage submissions and verifications`}
@@ -350,30 +352,29 @@ export default function AdminPropertyMapsPage() {
       </Box>
 
       {/* Stats */}
-      <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.5, display: 'flex', gap: 1, borderBottom: `1px solid ${BORDER}`, bgcolor: '#FAFBFD' }}>
+      <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.5, display: 'flex', gap: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'action.hover' }}>
         <StatPill icon={<HomeWorkIcon sx={{ fontSize: 16 }} />}   value={loading ? '—' : maps.length}      label="Total"   color={NAVY}    />
         <StatPill icon={<LocationOnIcon sx={{ fontSize: 16 }} />} value={loading ? '—' : pinned.length}    label="Pinned"  color={SUCCESS} />
         <StatPill icon={<PolylineIcon sx={{ fontSize: 16 }} />}   value={loading ? '—' : withBound.length} label="Mapped"  color={GOLD}    />
       </Box>
 
       {/* Filters */}
-      <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.2, borderBottom: `1px solid ${BORDER}` }}>
+      <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.2, borderBottom: 1, borderColor: 'divider' }}>
         <FilterChips filters={filters} onChange={setFilters} provinces={provinces} />
       </Box>
 
       {/* Search */}
-      <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.5, borderBottom: `1px solid ${BORDER}` }}>
+      <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
         <TextField
           fullWidth size="small" placeholder="Search owner, title, code…"
           value={search} onChange={e => setSearch(e.target.value)}
-          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, bgcolor: '#F6F8FB', fontSize: '0.88rem' } }}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: TEXT_SUBTLE }} /></InputAdornment> }}
+          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 18, color: 'text.disabled' }} /></InputAdornment> }}
         />
       </Box>
 
       {/* Result count */}
       <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           {filtered.length} {filtered.length === 1 ? 'result' : 'results'}
         </Typography>
         {!loading && (
@@ -492,8 +493,34 @@ export default function AdminPropertyMapsPage() {
           order: { xs: 2, md: 1 },
           minHeight: { xs: '45vh', md: 'auto' },
           maxHeight: { xs: '55vh', md: 'none' },
+          overflow: 'hidden',
+          position: 'relative',
         }}>
-          {activeProperty ? detailView : listView}
+          <AnimatePresence mode="wait" initial={false}>
+            {activeProperty ? (
+              <motion.div
+                key="detail"
+                initial={{ opacity: 0, x: 32 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 32 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                style={{ width: '100%', height: '100%' }}
+              >
+                {detailView}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="list"
+                initial={{ opacity: 0, x: -32 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -32 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                style={{ width: '100%', height: '100%' }}
+              >
+                {listView}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </Box>
 
         {/* Map */}
