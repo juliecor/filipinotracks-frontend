@@ -1,24 +1,16 @@
 import { Box, Container, Typography, Chip } from '@mui/material'
 import { motion } from 'framer-motion'
 import VerifiedIcon from '@mui/icons-material/Verified'
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz'
-import ArticleIcon from '@mui/icons-material/Article'
-import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import CancelIcon from '@mui/icons-material/Cancel'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import SupportAgentIcon from '@mui/icons-material/SupportAgent'
-import FolderCopyIcon from '@mui/icons-material/FolderCopy'
-import { NAVY, NAVY_SURFACE, NAVY_LINE, GOLD, GOLD_DARK, INFO, SUCCESS, WARNING, DANGER, SURFACE_SUBTLE } from '../../theme/theme'
+import { NAVY, NAVY_SURFACE, NAVY_LINE, GOLD, INFO, WARNING, DANGER } from '../../theme/theme'
 
 const services = [
   { icon: <VerifiedIcon sx={{ fontSize: 30 }} />, title: 'Title Verification', desc: 'Authenticate and verify the legitimacy of land titles with LRA database cross-referencing.', color: INFO, tag: 'Most Popular' },
-  { icon: <SwapHorizIcon sx={{ fontSize: 30 }} />, title: 'Transfer of Title', desc: 'Complete end-to-end title transfer processing from deed of sale to new TCT/OCT issuance.', color: GOLD, tag: '' },
-  { icon: <ArticleIcon sx={{ fontSize: 30 }} />, title: 'Tax Declaration', desc: 'New declaration, transfer, correction, and cancellation of real property tax declarations.', color: SUCCESS, tag: '' },
-  { icon: <HomeWorkIcon sx={{ fontSize: 30 }} />, title: 'Mortgage Annotation', desc: 'REM registration, cancellation of mortgage, and other liens or encumbrances on titles.', color: NAVY, tag: '' },
   { icon: <CancelIcon sx={{ fontSize: 30 }} />, title: 'Title Cancellation', desc: 'Legal cancellation of lost, destroyed, or superseded land titles with court coordination.', color: DANGER, tag: '' },
   { icon: <AccountBalanceIcon sx={{ fontSize: 30 }} />, title: 'Land Registration', desc: 'Original registration of unregistered lands, judicial and administrative proceedings.', color: NAVY_LINE, tag: 'Premium' },
   { icon: <SupportAgentIcon sx={{ fontSize: 30 }} />, title: 'Property Consultation', desc: 'Expert advice on property rights, title issues, boundary disputes, and legal strategies.', color: WARNING, tag: '' },
-  { icon: <FolderCopyIcon sx={{ fontSize: 30 }} />, title: 'Document Processing', desc: 'Notarization, certification, and processing of all real estate related documents.', color: GOLD_DARK, tag: '' },
 ]
 
 export default function Services() {

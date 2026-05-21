@@ -38,13 +38,9 @@ const STATUS_META = {
 
 const SERVICE_LABELS = {
   'title-verification':    'Title Verification',
-  'title-transfer':        'Title Transfer',
-  'tax-declaration':       'Tax Declaration',
-  'mortgage-annotation':   'Mortgage Annotation',
   'title-cancellation':    'Title Cancellation',
   'land-registration':     'Land Registration',
   'property-consultation': 'Property Consultation',
-  'document-processing':   'Document Processing',
 }
 
 function StatusBadge({ status }) {
@@ -92,10 +88,10 @@ function StatCard({ label, value, icon, color, delay, loading }) {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Title Verification',  icon: <VerifiedIcon />,        color: INFO    },
-  { label: 'Title Transfer',      icon: <CompareArrowsIcon />,   color: GOLD    },
-  { label: 'Tax Declaration',     icon: <AccountBalanceIcon />,  color: SUCCESS },
-  { label: 'Document Processing', icon: <DescriptionIcon />,     color: NAVY    },
+  { label: 'Title Verification',    icon: <VerifiedIcon />,         color: INFO    },
+  { label: 'Title Cancellation',    icon: <CompareArrowsIcon />,    color: DANGER  },
+  { label: 'Land Registration',     icon: <AccountBalanceIcon />,   color: SUCCESS },
+  { label: 'Property Consultation', icon: <DescriptionIcon />,      color: NAVY    },
 ]
 
 export default function ClientDashboard() {

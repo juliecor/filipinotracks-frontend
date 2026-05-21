@@ -15,14 +15,10 @@ import api from '../../api/axios'
 import { NAVY, GOLD } from '../../theme/theme'
 
 const SERVICES = [
-  { value: 'title-verification',    label: 'Title Verification',       desc: 'Verify authenticity and status of a land title',        icon: '🔍' },
-  { value: 'title-transfer',        label: 'Title Transfer',            desc: 'Transfer ownership of property title',                   icon: '🔄' },
-  { value: 'tax-declaration',       label: 'Tax Declaration',           desc: 'Process tax declaration for property assessment',        icon: '📋' },
-  { value: 'mortgage-annotation',   label: 'Mortgage Annotation',       desc: 'Annotate mortgage or encumbrance on title',              icon: '🏦' },
-  { value: 'title-cancellation',    label: 'Title Cancellation',        desc: 'Process cancellation of an existing land title',        icon: '❌' },
-  { value: 'land-registration',     label: 'Land Registration',         desc: 'Register a new land with the relevant agencies',         icon: '📝' },
-  { value: 'property-consultation', label: 'Property Consultation',     desc: 'Expert consultation on property documentation matters',  icon: '💼' },
-  { value: 'document-processing',   label: 'Document Processing',       desc: 'General processing of property-related documents',       icon: '📂' },
+  { value: 'title-verification',    label: 'Title Verification',    desc: 'Verify authenticity and status of a land title',         icon: '🔍' },
+  { value: 'title-cancellation',    label: 'Title Cancellation',    desc: 'Process cancellation of an existing land title',         icon: '❌' },
+  { value: 'land-registration',     label: 'Land Registration',     desc: 'Register a new land with the relevant agencies',         icon: '📝' },
+  { value: 'property-consultation', label: 'Property Consultation', desc: 'Expert consultation on property documentation matters',  icon: '💼' },
 ]
 
 const PROPERTY_TYPES = ['Residential', 'Commercial', 'Agricultural', 'Industrial', 'Mixed-Use']
@@ -263,18 +259,6 @@ export default function NewTransactionPage() {
                         </Select>
                       </FormControl>
                     </Grid>
-                    {form.service_type === 'title-transfer' && (
-                      <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth size="small">
-                          <InputLabel>Transfer Type</InputLabel>
-                          <Select label="Transfer Type" value={form.transfer_type} onChange={set('transfer_type')}
-                            sx={{ borderRadius: 2 }}>
-                            <MenuItem value="">— Select —</MenuItem>
-                            {TRANSFER_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
-                          </Select>
-                        </FormControl>
-                      </Grid>
-                    )}
                     <Grid item xs={12}>
                       <TextField fullWidth label="Additional Remarks" value={form.remarks} onChange={set('remarks')}
                         multiline rows={3} size="small" placeholder="Any special instructions or additional information…"

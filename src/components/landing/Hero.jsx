@@ -13,10 +13,10 @@ import SupportAgentIcon from '@mui/icons-material/SupportAgent'
 import { NAVY, NAVY_SURFACE, NAVY_LINE, GOLD, GOLD_LIGHT, INFO } from '../../theme/theme'
 
 const heroServices = [
-  { icon: <DescriptionIcon />, title: 'Title Verification', desc: 'Check title records and ownership details before moving forward.' },
-  { icon: <AssignmentTurnedInIcon />, title: 'Title Transfer', desc: 'Prepare, submit, and track transfer requirements in one flow.' },
-  { icon: <AccountBalanceIcon />, title: 'Tax & Registration', desc: 'Handle declarations, registration papers, and local requirements.' },
-  { icon: <SupportAgentIcon />, title: 'Document Support', desc: 'Get guided help for property paperwork and follow-ups.' },
+  { icon: <DescriptionIcon />,         title: 'Title Verification',    desc: 'Check title records and ownership details before moving forward.' },
+  { icon: <AssignmentTurnedInIcon />,  title: 'Title Cancellation',    desc: 'Cancel lost, destroyed, or superseded titles with court coordination.' },
+  { icon: <AccountBalanceIcon />,      title: 'Land Registration',     desc: 'Original registration of unregistered lands and proceedings.' },
+  { icon: <SupportAgentIcon />,        title: 'Property Consultation', desc: 'Expert advice on property rights, titles, and boundary disputes.' },
 ]
 
 export default function Hero() {
