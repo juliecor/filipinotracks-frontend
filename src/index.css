@@ -22,3 +22,42 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+/* Google Places Autocomplete dropdown — must float above MUI Dialog (z-index 1300)
+   and any other portaled overlay. Without this, suggestions hide behind the
+   fullscreen drawing dialog. */
+.pac-container {
+  z-index: 10000 !important;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(10, 22, 40, 0.18);
+  border: 1px solid #E5EAF2;
+  font-family: "Plus Jakarta Sans", "Inter", sans-serif;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.pac-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pac-item:hover {
+  background-color: #F6F8FB;
+}
+
+.pac-item-selected,
+.pac-item-selected:hover {
+  background-color: rgba(201, 162, 74, 0.12);
+}
+
+.pac-item-query {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0A1628;
+}
+
+.pac-matched {
+  color: #9F7E2C;
+}

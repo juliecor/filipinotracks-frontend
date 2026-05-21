@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  GoogleMap, Marker, Polygon, StandaloneSearchBox, useJsApiLoader,
+  GoogleMap, Marker, Polygon, Autocomplete, useJsApiLoader,
 } from '@react-google-maps/api'
 import {
   Box, Button, CircularProgress, Dialog, IconButton, ToggleButton, ToggleButtonGroup,
@@ -56,8 +56,8 @@ export default function PropertyBoundaryDrawer({
 
   const mapRef      = useRef(null)
   const fsMapRef    = useRef(null)
-  const searchRef   = useRef(null)
-  const fsSearchRef = useRef(null)
+  const autoRef     = useRef(null)
+  const fsAutoRef   = useRef(null)
 
   const center = (centerLat && centerLng)
     ? { lat: centerLat, lng: centerLng }
@@ -99,11 +99,11 @@ export default function PropertyBoundaryDrawer({
 
   const clearAll = useCallback(() => onChange([]), [onChange])
 
-  const handlePlacesChanged = useCallback((useFs = false) => {
-    const ref = useFs ? fsSearchRef.current : searchRef.current
-    const places = ref?.getPlaces()
-    if (!places?.length) return
-    const loc = places[0].geometry?.location
+  const handlePlaceChanged = useCallback((useFs = false) => {
+    const auto = useFs ? fsAutoRef.current : autoRef.current
+    if (!auto) return
+    const place = auto.getPlace()
+    const loc = place?.geometry?.location
     if (!loc) return
     const map = useFs ? fsMapRef.current : mapRef.current
     map?.panTo({ lat: loc.lat(), lng: loc.lng() })
@@ -236,20 +236,29 @@ export default function PropertyBoundaryDrawer({
 
       {/* Inline map */}
       <Box sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden', border: 1, borderColor: 'divider' }}>
-        <StandaloneSearchBox onLoad={ref => (searchRef.current = ref)} onPlacesChanged={() => handlePlacesChanged(false)}>
-          <input
-            type="text"
-            placeholder="Search location to start drawing…"
-            style={{
-              position: 'absolute', top: 12, left: 12, zIndex: 10,
-              width: 'calc(100% - 180px)', padding: '10px 14px',
-              borderRadius: 8, border: '1px solid #CBD5E1',
-              fontSize: 14, fontFamily: 'inherit',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              outline: 'none',
+        <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10, width: 'calc(100% - 180px)' }}>
+          <Autocomplete
+            onLoad={ref => (autoRef.current = ref)}
+            onPlaceChanged={() => handlePlaceChanged(false)}
+            options={{
+              componentRestrictions: { country: 'ph' },
+              fields: ['geometry.location', 'name', 'formatted_address'],
             }}
-          />
-        </StandaloneSearchBox>
+          >
+            <input
+              type="text"
+              placeholder="Search a place, address, or landmark…"
+              style={{
+                width: '100%', padding: '10px 14px',
+                borderRadius: 8, border: '1px solid #CBD5E1',
+                fontSize: 14, fontFamily: 'inherit',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                outline: 'none',
+                background: 'white',
+              }}
+            />
+          </Autocomplete>
+        </Box>
 
         <Box sx={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
           <ToggleButtonGroup value={mapType} exclusive onChange={(_, v) => v && setMapType(v)} size="small"
@@ -342,20 +351,29 @@ export default function PropertyBoundaryDrawer({
 
           {/* Map */}
           <Box sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
-            <StandaloneSearchBox onLoad={ref => (fsSearchRef.current = ref)} onPlacesChanged={() => handlePlacesChanged(true)}>
-              <input
-                type="text"
-                placeholder="Search a location to jump to…"
-                style={{
-                  position: 'absolute', top: 12, left: 12, zIndex: 10,
-                  width: 'min(420px, calc(100% - 200px))', padding: '10px 14px',
-                  borderRadius: 8, border: '1px solid #CBD5E1',
-                  fontSize: 14, fontFamily: 'inherit',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  outline: 'none',
+            <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10, width: 'min(420px, calc(100% - 200px))' }}>
+              <Autocomplete
+                onLoad={ref => (fsAutoRef.current = ref)}
+                onPlaceChanged={() => handlePlaceChanged(true)}
+                options={{
+                  componentRestrictions: { country: 'ph' },
+                  fields: ['geometry.location', 'name', 'formatted_address'],
                 }}
-              />
-            </StandaloneSearchBox>
+              >
+                <input
+                  type="text"
+                  placeholder="Search a place, address, or landmark…"
+                  style={{
+                    width: '100%', padding: '10px 14px',
+                    borderRadius: 8, border: '1px solid #CBD5E1',
+                    fontSize: 14, fontFamily: 'inherit',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    outline: 'none',
+                    background: 'white',
+                  }}
+                />
+              </Autocomplete>
+            </Box>
 
             <Box sx={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
               <ToggleButtonGroup value={mapType} exclusive onChange={(_, v) => v && setMapType(v)} size="small"

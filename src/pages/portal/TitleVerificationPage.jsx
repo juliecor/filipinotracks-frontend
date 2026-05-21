@@ -70,8 +70,44 @@ export default function TitleVerificationPage() {
   const [boundaries, setBoundaries] = useState([{ ...EMPTY_BOUNDARY }])
   const [drawnPoints, setDrawnPoints] = useState([])
   const [boundaryMethod, setBoundaryMethod] = useState('draw') // 'draw' | 'bearings'
+  const [fieldErrors, setFieldErrors] = useState({})
 
-  const set = (k) => (e) => setInfo(p => ({ ...p, [k]: e.target.value }))
+  // Setter that also clears the field's error once the user starts editing.
+  const set = (k) => (e) => {
+    setInfo(p => ({ ...p, [k]: e.target.value }))
+    if (fieldErrors[k]) setFieldErrors(prev => ({ ...prev, [k]: undefined }))
+  }
+
+  // Required fields for Step 1 → cannot proceed without them.
+  const REQUIRED_STEP_1 = {
+    title_number:     'Title number is required',
+    registered_owner: 'Registered owner name is required',
+    property_type:    'Please choose a property type',
+  }
+
+  const validateStep1 = () => {
+    const errs = {}
+    for (const [k, msg] of Object.entries(REQUIRED_STEP_1)) {
+      if (!String(info[k] || '').trim()) errs[k] = msg
+    }
+    return errs
+  }
+
+  const handleNext = () => {
+    if (step === 0) {
+      const errs = validateStep1()
+      if (Object.keys(errs).length > 0) {
+        setFieldErrors(errs)
+        setError('Please fill in the required fields highlighted below.')
+        // Scroll to top so user sees the error banner
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+    }
+    setError('')
+    setFieldErrors({})
+    setStep(s => s + 1)
+  }
 
   // Compute polygon from currently-selected method
   const computedFromBearings = location.lat
@@ -129,11 +165,6 @@ export default function TitleVerificationPage() {
     }
   }
 
-  const canNext = () => {
-    if (step === 0) return info.registered_owner || info.title_number
-    return true
-  }
-
   return (
     <Box sx={{ minHeight: '100%', bgcolor: '#F4F6FA' }}>
 
@@ -181,7 +212,17 @@ export default function TitleVerificationPage() {
                 <StepHeader icon={<HomeWorkIcon sx={{ color: NAVY, fontSize: 20 }} />} title="Property Information" subtitle="Enter the details from your property title" />
                 <Grid container spacing={2}>
                   {/* Row 1 — three title identifiers (3 cols at md+, 1-col on mobile) */}
-                  <Grid item xs={12} sm={6} md={4}><TextField label="Title Number" fullWidth size="small" value={info.title_number} onChange={set('title_number')} /></Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <TextField
+                      label="Title Number"
+                      required
+                      fullWidth size="small"
+                      value={info.title_number}
+                      onChange={set('title_number')}
+                      error={!!fieldErrors.title_number}
+                      helperText={fieldErrors.title_number}
+                    />
+                  </Grid>
                   <Grid item xs={12} sm={6} md={4}><TextField label="Lot Number"   fullWidth size="small" value={info.lot_number}   onChange={set('lot_number')} /></Grid>
                   <Grid item xs={12} sm={6} md={4}><TextField label="Block Number" fullWidth size="small" value={info.block_number} onChange={set('block_number')} /></Grid>
 
@@ -189,10 +230,10 @@ export default function TitleVerificationPage() {
                   <Grid item xs={12} sm={6} md={4}><TextField label="Survey Plan Number"     fullWidth size="small" value={info.survey_plan_number}     onChange={set('survey_plan_number')} /></Grid>
                   <Grid item xs={12} sm={6} md={4}><TextField label="Tax Declaration Number" fullWidth size="small" value={info.tax_declaration_number} onChange={set('tax_declaration_number')} /></Grid>
                   <Grid item xs={12} sm={6} md={4}>
-                    <FormControl fullWidth size="small">
+                    <FormControl fullWidth size="small" required error={!!fieldErrors.property_type}>
                       <InputLabel shrink>Property Type</InputLabel>
                       <Select
-                        label="Property Type"
+                        label="Property Type *"
                         notched
                         displayEmpty
                         value={info.property_type}
@@ -204,11 +245,26 @@ export default function TitleVerificationPage() {
                       >
                         {PROPERTY_TYPES.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
                       </Select>
+                      {fieldErrors.property_type && (
+                        <Typography variant="caption" sx={{ color: 'error.main', mt: 0.5, ml: 1.5 }}>
+                          {fieldErrors.property_type}
+                        </Typography>
+                      )}
                     </FormControl>
                   </Grid>
 
                   {/* Row 3 — owner & land area */}
-                  <Grid item xs={12} md={8}><TextField label="Registered Owner Name" fullWidth size="small" value={info.registered_owner} onChange={set('registered_owner')} /></Grid>
+                  <Grid item xs={12} md={8}>
+                    <TextField
+                      label="Registered Owner Name"
+                      required
+                      fullWidth size="small"
+                      value={info.registered_owner}
+                      onChange={set('registered_owner')}
+                      error={!!fieldErrors.registered_owner}
+                      helperText={fieldErrors.registered_owner}
+                    />
+                  </Grid>
                   <Grid item xs={12} md={4}><TextField label="Land Area (sqm)" type="number" fullWidth size="small" value={info.land_area} onChange={set('land_area')} /></Grid>
 
                   {/* Row 4 — location (province / city / barangay, perfect 3-col fit) */}
@@ -463,7 +519,7 @@ export default function TitleVerificationPage() {
               <Button
                 variant="contained"
                 endIcon={<ArrowForwardIcon />}
-                onClick={() => setStep(s => s + 1)}
+                onClick={handleNext}
                 sx={{ fontWeight: 700, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, color: NAVY, px: 3 }}
               >
                 {step === 1 && !location.lat ? 'Skip Location' : step === 2 && !hasBoundaries ? 'Skip' : 'Next'}
