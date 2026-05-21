@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Box, Typography, Button, Stepper, Step, StepLabel, TextField, MenuItem,
   Select, FormControl, InputLabel, Grid, IconButton, Paper, CircularProgress,
-  Alert, Chip, Divider, Tooltip,
+  Alert, Chip, Divider, Tooltip, Tabs, Tab,
 } from '@mui/material'
 import { motion, AnimatePresence } from 'framer-motion'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
@@ -15,9 +15,12 @@ import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import TableChartIcon from '@mui/icons-material/TableChart'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
-import { NAVY, GOLD } from '../../theme/theme'
+import PolylineIcon from '@mui/icons-material/Polyline'
+import GestureIcon from '@mui/icons-material/Gesture'
+import { NAVY, GOLD, GOLD_DARK } from '../../theme/theme'
 import api from '../../api/axios'
 import PropertyMapPicker from '../../components/map/PropertyMapPicker'
+import PropertyBoundaryDrawer from '../../components/map/PropertyBoundaryDrawer'
 import PhLocationPicker from '../../components/PhLocationPicker'
 import { boundariesToPolygon, pointsToGeoJSON } from '../../utils/bearingToPolygon'
 
@@ -65,13 +68,16 @@ export default function TitleVerificationPage() {
   })
   const [location, setLocation] = useState({ lat: null, lng: null })
   const [boundaries, setBoundaries] = useState([{ ...EMPTY_BOUNDARY }])
+  const [drawnPoints, setDrawnPoints] = useState([])
+  const [boundaryMethod, setBoundaryMethod] = useState('draw') // 'draw' | 'bearings'
 
   const set = (k) => (e) => setInfo(p => ({ ...p, [k]: e.target.value }))
 
-  // Compute polygon from boundaries + pin
-  const polygonPoints = location.lat
+  // Compute polygon from currently-selected method
+  const computedFromBearings = location.lat
     ? boundariesToPolygon(location.lat, location.lng, boundaries.map(b => ({ ...b })))
     : []
+  const polygonPoints = boundaryMethod === 'draw' ? drawnPoints : computedFromBearings
 
   const handleAddRow = () => setBoundaries(p => [...p, { ...EMPTY_BOUNDARY }])
   const handleRemoveRow = (i) => setBoundaries(p => p.filter((_, idx) => idx !== i))
@@ -79,7 +85,9 @@ export default function TitleVerificationPage() {
     setBoundaries(p => p.map((r, idx) => idx === i ? { ...r, [k]: e.target.value } : r))
   }
 
-  const hasBoundaries = boundaries.some(b => b.degrees && b.distance)
+  const hasBearings   = boundaries.some(b => b.degrees && b.distance)
+  const hasDrawn      = drawnPoints.length >= 3
+  const hasBoundaries = boundaryMethod === 'draw' ? hasDrawn : hasBearings
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -103,12 +111,14 @@ export default function TitleVerificationPage() {
       const geoJson = polygonPoints.length > 2 ? pointsToGeoJSON(polygonPoints) : null
 
       // 3. Save property map
+      // Only send bearing rows when user actually entered them via the bearings tab;
+      // hand-drawn polygons store their shape entirely in geojson_polygon.
       await api.post(`/transactions/${tx.id}/property-map`, {
         ...info,
         latitude: location.lat,
         longitude: location.lng,
         geojson_polygon: geoJson,
-        boundaries: hasBoundaries ? boundaries : [],
+        boundaries: boundaryMethod === 'bearings' && hasBearings ? boundaries : [],
       })
 
       navigate(`/portal/transactions/${tx.id}`, { state: { new: true } })
@@ -129,7 +139,7 @@ export default function TitleVerificationPage() {
 
       {/* Hero */}
       <Box sx={{ background: `linear-gradient(140deg, #1A3A6E 0%, #245AA0 100%)`, px: { xs: 3, md: 5 }, pt: { xs: 3, md: 4 }, pb: { xs: 5, md: 6 } }}>
-        <Box sx={{ maxWidth: 860, mx: 'auto' }}>
+        <Box sx={{ maxWidth: 1280, mx: 'auto' }}>
           <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(-1)}
             sx={{ color: 'rgba(255,255,255,0.6)', mb: 2, fontWeight: 600, '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.08)' } }}>
             Back
@@ -141,7 +151,7 @@ export default function TitleVerificationPage() {
         </Box>
       </Box>
 
-      <Box sx={{ maxWidth: 860, mx: 'auto', px: { xs: 2, md: 3 }, py: 4 }}>
+      <Box sx={{ maxWidth: 1280, mx: 'auto', px: { xs: 2, md: 4 }, py: 4 }}>
 
         {/* Stepper */}
         <Paper sx={{ p: { xs: 2, md: 3 }, mb: 3, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
@@ -170,26 +180,45 @@ export default function TitleVerificationPage() {
               <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
                 <StepHeader icon={<HomeWorkIcon sx={{ color: NAVY, fontSize: 20 }} />} title="Property Information" subtitle="Enter the details from your property title" />
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}><TextField label="Title Number" fullWidth size="small" value={info.title_number} onChange={set('title_number')} /></Grid>
-                  <Grid item xs={12} sm={6}><TextField label="Lot Number" fullWidth size="small" value={info.lot_number} onChange={set('lot_number')} /></Grid>
-                  <Grid item xs={12} sm={6}><TextField label="Block Number" fullWidth size="small" value={info.block_number} onChange={set('block_number')} /></Grid>
-                  <Grid item xs={12} sm={6}><TextField label="Survey Plan Number" fullWidth size="small" value={info.survey_plan_number} onChange={set('survey_plan_number')} /></Grid>
-                  <Grid item xs={12} sm={6}><TextField label="Tax Declaration Number" fullWidth size="small" value={info.tax_declaration_number} onChange={set('tax_declaration_number')} /></Grid>
-                  <Grid item xs={12} sm={6}>
+                  {/* Row 1 — three title identifiers (3 cols at md+, 1-col on mobile) */}
+                  <Grid item xs={12} sm={6} md={4}><TextField label="Title Number" fullWidth size="small" value={info.title_number} onChange={set('title_number')} /></Grid>
+                  <Grid item xs={12} sm={6} md={4}><TextField label="Lot Number"   fullWidth size="small" value={info.lot_number}   onChange={set('lot_number')} /></Grid>
+                  <Grid item xs={12} sm={6} md={4}><TextField label="Block Number" fullWidth size="small" value={info.block_number} onChange={set('block_number')} /></Grid>
+
+                  {/* Row 2 — declarations & type */}
+                  <Grid item xs={12} sm={6} md={4}><TextField label="Survey Plan Number"     fullWidth size="small" value={info.survey_plan_number}     onChange={set('survey_plan_number')} /></Grid>
+                  <Grid item xs={12} sm={6} md={4}><TextField label="Tax Declaration Number" fullWidth size="small" value={info.tax_declaration_number} onChange={set('tax_declaration_number')} /></Grid>
+                  <Grid item xs={12} sm={6} md={4}>
                     <FormControl fullWidth size="small">
-                      <InputLabel>Property Type</InputLabel>
-                      <Select label="Property Type" value={info.property_type} onChange={set('property_type')}>
+                      <InputLabel shrink>Property Type</InputLabel>
+                      <Select
+                        label="Property Type"
+                        notched
+                        displayEmpty
+                        value={info.property_type}
+                        onChange={set('property_type')}
+                        renderValue={(selected) => {
+                          if (!selected) return <em style={{ color: '#94A3B8', fontStyle: 'normal' }}>Select type</em>
+                          return PROPERTY_TYPES.find(t => t.value === selected)?.label || selected
+                        }}
+                      >
                         {PROPERTY_TYPES.map(t => <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>)}
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12}><TextField label="Registered Owner Name" fullWidth size="small" value={info.registered_owner} onChange={set('registered_owner')} /></Grid>
-                  <Grid item xs={12} sm={4}><TextField label="Land Area (sqm)" type="number" fullWidth size="small" value={info.land_area} onChange={set('land_area')} /></Grid>
+
+                  {/* Row 3 — owner & land area */}
+                  <Grid item xs={12} md={8}><TextField label="Registered Owner Name" fullWidth size="small" value={info.registered_owner} onChange={set('registered_owner')} /></Grid>
+                  <Grid item xs={12} md={4}><TextField label="Land Area (sqm)" type="number" fullWidth size="small" value={info.land_area} onChange={set('land_area')} /></Grid>
+
+                  {/* Row 4 — location (province / city / barangay, perfect 3-col fit) */}
                   <PhLocationPicker
                     onChange={({ province, city_municipality, barangay }) =>
                       setInfo(p => ({ ...p, province, city_municipality, barangay }))
                     }
                   />
+
+                  {/* Row 5+ — addresses */}
                   <Grid item xs={12}><TextField label="Full Address" fullWidth size="small" multiline rows={2} value={info.full_address} onChange={set('full_address')} /></Grid>
                   <Grid item xs={12}><TextField label="Additional Remarks (optional)" fullWidth size="small" multiline rows={2} value={info.remarks} onChange={set('remarks')} /></Grid>
                 </Grid>
@@ -224,77 +253,137 @@ export default function TitleVerificationPage() {
               </Paper>
             )}
 
-            {/* ── STEP 3: Technical Description ── */}
+            {/* ── STEP 3: Boundary Definition ── */}
             {step === 2 && (
               <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
                 <StepHeader
-                  icon={<TableChartIcon sx={{ color: NAVY, fontSize: 20 }} />}
-                  title="Technical Description"
-                  subtitle="Enter bearings and distances from your property's technical description"
+                  icon={<PolylineIcon sx={{ color: NAVY, fontSize: 20 }} />}
+                  title="Boundary Definition"
+                  subtitle="Define the property boundary — draw it on the map or enter the coordinates"
                   optional
                 />
-                <Alert severity="info" icon={<InfoOutlinedIcon />} sx={{ mb: 3, borderRadius: 2, fontSize: '0.82rem' }}>
-                  <strong>This step is optional.</strong> Only fill this if your title has a Technical Description section with bearings and distances. This helps us draw an approximate boundary on the map.
+                <Alert severity="info" icon={<InfoOutlinedIcon />} sx={{ mb: 2.5, borderRadius: 2, fontSize: '0.82rem' }}>
+                  <strong>This step is optional.</strong> Choose the method that's easier for you. Both produce the same polygon on the map for our staff to verify.
                 </Alert>
 
-                {/* Column headers */}
-                <Box sx={{ display: { xs: 'none', md: 'grid' }, gridTemplateColumns: '80px 80px 1fr 80px 80px 1fr 120px 44px', gap: 1, mb: 1, px: 0.5 }}>
-                  {['Pt From', 'Pt To', 'Direction', '°Deg', "'Min", 'Direction', 'Distance (m)', ''].map(h => (
-                    <Typography key={h} variant="caption" sx={{ fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', fontSize: '0.62rem' }}>{h}</Typography>
-                  ))}
-                </Box>
+                {/* Method tabs */}
+                <Tabs
+                  value={boundaryMethod}
+                  onChange={(_, v) => setBoundaryMethod(v)}
+                  sx={{
+                    mb: 3,
+                    borderBottom: 1, borderColor: 'divider',
+                    '& .MuiTab-root': { fontWeight: 700, textTransform: 'none', fontSize: '0.88rem', minHeight: 44 },
+                    '& .Mui-selected': { color: `${GOLD_DARK} !important` },
+                    '& .MuiTabs-indicator': { backgroundColor: GOLD, height: 3, borderRadius: '3px 3px 0 0' },
+                  }}
+                >
+                  <Tab
+                    value="draw"
+                    icon={<GestureIcon sx={{ fontSize: 18 }} />}
+                    iconPosition="start"
+                    label="Draw on Map"
+                  />
+                  <Tab
+                    value="bearings"
+                    icon={<TableChartIcon sx={{ fontSize: 18 }} />}
+                    iconPosition="start"
+                    label="Enter Coordinates"
+                  />
+                </Tabs>
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  {boundaries.map((row, i) => (
-                    <Box key={i} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: '80px 80px 1fr 80px 80px 1fr 120px 44px' }, gap: 1, alignItems: 'center', p: { xs: 1.5, md: 0 }, bgcolor: { xs: '#F8FAFC', md: 'transparent' }, borderRadius: { xs: 2, md: 0 }, border: { xs: '1px solid #EEF2F7', md: 'none' } }}>
-                      <TextField size="small" placeholder="1" value={row.point_from} onChange={setRow(i, 'point_from')} inputProps={{ style: { textAlign: 'center' } }} />
-                      <TextField size="small" placeholder="2" value={row.point_to} onChange={setRow(i, 'point_to')} inputProps={{ style: { textAlign: 'center' } }} />
-                      <FormControl size="small">
-                        <Select value={row.dir1} onChange={setRow(i, 'dir1')}>
-                          <MenuItem value="N">N (North)</MenuItem>
-                          <MenuItem value="S">S (South)</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <TextField size="small" placeholder="45" type="number" value={row.degrees} onChange={setRow(i, 'degrees')} inputProps={{ min: 0, max: 89, style: { textAlign: 'center' } }} />
-                      <TextField size="small" placeholder="30" type="number" value={row.minutes} onChange={setRow(i, 'minutes')} inputProps={{ min: 0, max: 59, style: { textAlign: 'center' } }} />
-                      <FormControl size="small">
-                        <Select value={row.dir2} onChange={setRow(i, 'dir2')}>
-                          <MenuItem value="E">E (East)</MenuItem>
-                          <MenuItem value="W">W (West)</MenuItem>
-                        </Select>
-                      </FormControl>
-                      <TextField size="small" placeholder="Meters" type="number" value={row.distance} onChange={setRow(i, 'distance')} />
-                      <Tooltip title="Remove row">
-                        <span>
-                          <IconButton size="small" onClick={() => handleRemoveRow(i)} disabled={boundaries.length === 1}
-                            sx={{ color: '#EF4444', '&:disabled': { color: '#CBD5E1' } }}>
-                            <DeleteIcon sx={{ fontSize: 18 }} />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </Box>
-                  ))}
-                </Box>
-
-                <Button startIcon={<AddIcon />} onClick={handleAddRow} sx={{ mt: 2, color: NAVY, fontWeight: 700, bgcolor: '#F4F6FA', '&:hover': { bgcolor: '#EDF0F7' } }}>
-                  Add Row
-                </Button>
-
-                {hasBoundaries && location.lat && (
-                  <Box sx={{ mt: 3, p: 2, bgcolor: `${GOLD}10`, border: `1px solid ${GOLD}40`, borderRadius: 2 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#A8882A', mb: 0.5 }}>
-                      ✓ Boundary will be drawn on map ({polygonPoints.length} points computed)
+                {/* ── DRAW MODE ── */}
+                {boundaryMethod === 'draw' && (
+                  <Box>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2, lineHeight: 1.6 }}>
+                      Click anywhere on the map to drop boundary vertices. After 3+ vertices the polygon will appear automatically. You can drag any numbered pin to adjust its position.
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#A8882A' }}>
-                      This is an approximate visualization only, not a legal cadastral plot.
-                    </Typography>
+                    <PropertyBoundaryDrawer
+                      centerLat={location.lat}
+                      centerLng={location.lng}
+                      points={drawnPoints}
+                      onChange={setDrawnPoints}
+                    />
+                    {hasDrawn && (
+                      <Box sx={{ mt: 2, p: 2, bgcolor: `${GOLD}10`, border: `1px solid ${GOLD}40`, borderRadius: 2 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: GOLD_DARK, mb: 0.5 }}>
+                          ✓ Boundary drawn ({drawnPoints.length} vertices)
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: GOLD_DARK }}>
+                          Our staff will verify the boundary using your supporting documents.
+                        </Typography>
+                      </Box>
+                    )}
                   </Box>
                 )}
 
-                {hasBoundaries && !location.lat && (
-                  <Alert severity="warning" sx={{ mt: 2, borderRadius: 2, fontSize: '0.82rem' }}>
-                    Please go back and pin a starting location on the map to enable boundary drawing.
-                  </Alert>
+                {/* ── BEARINGS MODE ── */}
+                {boundaryMethod === 'bearings' && (
+                  <Box>
+                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2, lineHeight: 1.6 }}>
+                      Enter bearings and distances exactly as shown on your property's Technical Description. The system computes the boundary starting from the pin you placed in Step 2.
+                    </Typography>
+
+                    {/* Column headers */}
+                    <Box sx={{ display: { xs: 'none', md: 'grid' }, gridTemplateColumns: '80px 80px 1fr 80px 80px 1fr 120px 44px', gap: 1, mb: 1, px: 0.5 }}>
+                      {['Pt From', 'Pt To', 'Direction', '°Deg', "'Min", 'Direction', 'Distance (m)', ''].map(h => (
+                        <Typography key={h} variant="caption" sx={{ fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', fontSize: '0.62rem' }}>{h}</Typography>
+                      ))}
+                    </Box>
+
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      {boundaries.map((row, i) => (
+                        <Box key={i} sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: '80px 80px 1fr 80px 80px 1fr 120px 44px' }, gap: 1, alignItems: 'center', p: { xs: 1.5, md: 0 }, bgcolor: { xs: 'action.hover', md: 'transparent' }, borderRadius: { xs: 2, md: 0 }, border: { xs: 1, md: 'none' }, borderColor: { xs: 'divider', md: 'transparent' } }}>
+                          <TextField size="small" placeholder="1" value={row.point_from} onChange={setRow(i, 'point_from')} inputProps={{ style: { textAlign: 'center' } }} />
+                          <TextField size="small" placeholder="2" value={row.point_to} onChange={setRow(i, 'point_to')} inputProps={{ style: { textAlign: 'center' } }} />
+                          <FormControl size="small">
+                            <Select value={row.dir1} onChange={setRow(i, 'dir1')}>
+                              <MenuItem value="N">N (North)</MenuItem>
+                              <MenuItem value="S">S (South)</MenuItem>
+                            </Select>
+                          </FormControl>
+                          <TextField size="small" placeholder="45" type="number" value={row.degrees} onChange={setRow(i, 'degrees')} inputProps={{ min: 0, max: 89, style: { textAlign: 'center' } }} />
+                          <TextField size="small" placeholder="30" type="number" value={row.minutes} onChange={setRow(i, 'minutes')} inputProps={{ min: 0, max: 59, style: { textAlign: 'center' } }} />
+                          <FormControl size="small">
+                            <Select value={row.dir2} onChange={setRow(i, 'dir2')}>
+                              <MenuItem value="E">E (East)</MenuItem>
+                              <MenuItem value="W">W (West)</MenuItem>
+                            </Select>
+                          </FormControl>
+                          <TextField size="small" placeholder="Meters" type="number" value={row.distance} onChange={setRow(i, 'distance')} />
+                          <Tooltip title="Remove row">
+                            <span>
+                              <IconButton size="small" onClick={() => handleRemoveRow(i)} disabled={boundaries.length === 1}
+                                sx={{ color: 'error.main', '&:disabled': { color: 'action.disabled' } }}>
+                                <DeleteIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Box>
+                      ))}
+                    </Box>
+
+                    <Button startIcon={<AddIcon />} onClick={handleAddRow} sx={{ mt: 2, color: 'text.primary', fontWeight: 700, bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }}>
+                      Add Row
+                    </Button>
+
+                    {hasBearings && location.lat && (
+                      <Box sx={{ mt: 3, p: 2, bgcolor: `${GOLD}10`, border: `1px solid ${GOLD}40`, borderRadius: 2 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: GOLD_DARK, mb: 0.5 }}>
+                          ✓ Boundary will be drawn on map ({computedFromBearings.length} points computed)
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: GOLD_DARK }}>
+                          This is an approximate visualization only, not a legal cadastral plot.
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {hasBearings && !location.lat && (
+                      <Alert severity="warning" sx={{ mt: 2, borderRadius: 2, fontSize: '0.82rem' }}>
+                        Please go back and pin a starting location on the map to enable boundary drawing.
+                      </Alert>
+                    )}
+                  </Box>
                 )}
               </Paper>
             )}

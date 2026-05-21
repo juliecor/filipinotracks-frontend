@@ -81,15 +81,21 @@ export default function PhLocationPicker({ onChange }) {
   return (
     <>
       {/* Province */}
-      <Grid item xs={12} sm={4}>
+      <Grid item xs={12} sm={6} md={4}>
         <FormControl fullWidth size="small" disabled={loadingP}>
-          <InputLabel>{loadingP ? 'Loading provinces…' : 'Province'}</InputLabel>
+          <InputLabel shrink>{loadingP ? 'Loading provinces…' : 'Province'}</InputLabel>
           <Select
             label={loadingP ? 'Loading provinces…' : 'Province'}
+            notched
+            displayEmpty
             value={provinceCode}
             onChange={handleProvinceChange}
+            renderValue={(v) => {
+              if (!v) return <em style={{ color: '#94A3B8', fontStyle: 'normal' }}>Select province</em>
+              return provinces.find(p => p.code === v)?.name || v
+            }}
             endAdornment={loadingP
-              ? <InputAdornment position="end" sx={{ mr: 1 }}><CircularProgress size={14} /></InputAdornment>
+              ? <InputAdornment position="end" sx={{ mr: 3 }}><CircularProgress size={14} /></InputAdornment>
               : null}
           >
             {provinces.map(p => (
@@ -100,15 +106,21 @@ export default function PhLocationPicker({ onChange }) {
       </Grid>
 
       {/* City / Municipality */}
-      <Grid item xs={12} sm={4}>
+      <Grid item xs={12} sm={6} md={4}>
         <FormControl fullWidth size="small" disabled={!provinceCode || loadingC}>
-          <InputLabel>{loadingC ? 'Loading cities…' : 'City / Municipality'}</InputLabel>
+          <InputLabel shrink>{loadingC ? 'Loading cities…' : 'City'}</InputLabel>
           <Select
-            label={loadingC ? 'Loading cities…' : 'City / Municipality'}
+            label={loadingC ? 'Loading cities…' : 'City'}
+            notched
+            displayEmpty
             value={cityCode}
             onChange={handleCityChange}
+            renderValue={(v) => {
+              if (!v) return <em style={{ color: '#94A3B8', fontStyle: 'normal' }}>{provinceCode ? 'Select city' : 'Pick province first'}</em>
+              return cities.find(c => c.code === v)?.name || v
+            }}
             endAdornment={loadingC
-              ? <InputAdornment position="end" sx={{ mr: 1 }}><CircularProgress size={14} /></InputAdornment>
+              ? <InputAdornment position="end" sx={{ mr: 3 }}><CircularProgress size={14} /></InputAdornment>
               : null}
           >
             {cities.map(c => (
@@ -119,16 +131,22 @@ export default function PhLocationPicker({ onChange }) {
       </Grid>
 
       {/* Barangay — Select if API returned results, plain text fallback */}
-      <Grid item xs={12} sm={4}>
+      <Grid item xs={12} sm={6} md={4}>
         {showBarangaySelect ? (
           <FormControl fullWidth size="small" disabled={!cityCode || loadingB}>
-            <InputLabel>{loadingB ? 'Loading barangays…' : 'Barangay'}</InputLabel>
+            <InputLabel shrink>{loadingB ? 'Loading barangays…' : 'Barangay'}</InputLabel>
             <Select
               label={loadingB ? 'Loading barangays…' : 'Barangay'}
+              notched
+              displayEmpty
               value={barangayCode}
               onChange={handleBarangaySelectChange}
+              renderValue={(v) => {
+                if (!v) return <em style={{ color: '#94A3B8', fontStyle: 'normal' }}>Select barangay</em>
+                return barangays.find(b => b.code === v)?.name || v
+              }}
               endAdornment={loadingB
-                ? <InputAdornment position="end" sx={{ mr: 1 }}><CircularProgress size={14} /></InputAdornment>
+                ? <InputAdornment position="end" sx={{ mr: 3 }}><CircularProgress size={14} /></InputAdornment>
                 : null}
             >
               {barangays.map(b => (
