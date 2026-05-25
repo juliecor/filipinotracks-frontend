@@ -51,7 +51,7 @@ export default function PropertyMapViewer({ propertyMap }) {
     libraries: LIBRARIES,
   })
 
-  const [mapType, setMapType]   = useState('hybrid')
+  const [mapType, setMapType]   = useState('satellite')
   const [infoOpen, setInfoOpen] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const mapRef   = useRef(null)
@@ -105,7 +105,7 @@ export default function PropertyMapViewer({ propertyMap }) {
         <Box sx={{ position: 'absolute', top: 12, left: 12, zIndex: 10, display: 'flex', gap: 1 }}>
           <ToggleButtonGroup value={mapType} exclusive onChange={(_, v) => v && setMapType(v)} size="small"
             sx={{ bgcolor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.18)', borderRadius: 1 }}>
-            <ToggleButton value="hybrid" sx={{ px: 1.5, fontSize: '0.72rem', fontWeight: 700 }}>
+            <ToggleButton value="satellite" sx={{ px: 1.5, fontSize: '0.72rem', fontWeight: 700 }}>
               <SatelliteAltIcon sx={{ fontSize: 15, mr: 0.5 }} /> Satellite
             </ToggleButton>
             <ToggleButton value="roadmap" sx={{ px: 1.5, fontSize: '0.72rem', fontWeight: 700 }}>

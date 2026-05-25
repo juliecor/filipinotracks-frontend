@@ -30,14 +30,15 @@ const STATUS_META = {
   'under review':             { label: 'Under Review', color: INFO      },
   'verification ongoing':     { label: 'Verifying',    color: INFO      },
   'processing':               { label: 'Processing',   color: WARNING   },
-  'waiting for requirements': { label: 'Waiting',      color: GOLD_DARK },
+  'waiting for requirements': { label: 'Waiting',          color: GOLD_DARK },
+  'pending approval':         { label: 'Pending Approval', color: '#7C3AED' },
   'approved':                 { label: 'Approved',     color: SUCCESS   },
   'released':                 { label: 'Released',     color: SUCCESS   },
   'rejected':                 { label: 'Rejected',     color: DANGER    },
 }
 
 const SERVICE_LABELS = {
-  'title-verification':    'Title Verification',
+  'title-verification':    'Land / Title Verification',
   'title-cancellation':    'Title Cancellation',
   'land-registration':     'Land Registration',
   'property-consultation': 'Property Consultation',
@@ -88,7 +89,7 @@ function StatCard({ label, value, icon, color, delay, loading }) {
 }
 
 const QUICK_ACTIONS = [
-  { label: 'Title Verification',    icon: <VerifiedIcon />,         color: INFO    },
+  { label: 'Land / Title Verification',    icon: <VerifiedIcon />,         color: INFO    },
   { label: 'Title Cancellation',    icon: <CompareArrowsIcon />,    color: DANGER  },
   { label: 'Land Registration',     icon: <AccountBalanceIcon />,   color: SUCCESS },
   { label: 'Property Consultation', icon: <DescriptionIcon />,      color: NAVY    },

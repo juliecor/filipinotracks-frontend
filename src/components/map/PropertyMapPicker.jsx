@@ -25,7 +25,7 @@ export default function PropertyMapPicker({ lat, lng, polygonPoints = [], onChan
     libraries: LIBRARIES,
   })
 
-  const [mapType, setMapType] = useState('hybrid')
+  const [mapType, setMapType] = useState('satellite')
   const mapRef = useRef(null)
   const searchRef = useRef(null)
 
@@ -91,7 +91,7 @@ export default function PropertyMapPicker({ lat, lng, polygonPoints = [], onChan
       <Box sx={{ position: 'absolute', top: 12, right: 12, zIndex: 10 }}>
         <ToggleButtonGroup value={mapType} exclusive onChange={(_, v) => v && setMapType(v)} size="small"
           sx={{ bgcolor: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', borderRadius: 1 }}>
-          <ToggleButton value="hybrid" sx={{ px: 1.5 }}>
+          <ToggleButton value="satellite" sx={{ px: 1.5 }}>
             <SatelliteAltIcon sx={{ fontSize: 16, mr: 0.5 }} /> Satellite
           </ToggleButton>
           <ToggleButton value="roadmap" sx={{ px: 1.5 }}>

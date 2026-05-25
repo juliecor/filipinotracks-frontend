@@ -22,6 +22,7 @@ import api from '../../api/axios'
 import { NAVY, GOLD } from '../../theme/theme'
 import { useAuth } from '../../context/AuthContext'
 import PropertyMapViewer from '../../components/map/PropertyMapViewer'
+import PropertyMapEditor from '../../components/map/PropertyMapEditor'
 
 const STATUS_META = {
   'submitted':                { label: 'Submitted',                color: '#8B5CF6', bg: '#F3F0FF' },
@@ -29,13 +30,17 @@ const STATUS_META = {
   'verification ongoing':     { label: 'Verification Ongoing',     color: '#06B6D4', bg: '#ECFEFF' },
   'processing':               { label: 'Processing',               color: '#F59E0B', bg: '#FFFBEB' },
   'waiting for requirements': { label: 'Waiting for Requirements', color: '#F97316', bg: '#FFF7ED' },
+  'pending approval':         { label: 'Pending Approval',         color: '#7C3AED', bg: '#F5F3FF' },
   'approved':                 { label: 'Approved',                 color: '#22C55E', bg: '#F0FDF4' },
   'released':                 { label: 'Released',                 color: '#16A34A', bg: '#DCFCE7' },
   'rejected':                 { label: 'Rejected',                 color: '#EF4444', bg: '#FEF2F2' },
 }
 
+// Statuses that only ADMIN can set — staff cannot self-approve.
+const ADMIN_ONLY_STATUSES = ['approved', 'released', 'rejected']
+
 const SERVICE_LABELS = {
-  'title-verification':    'Title Verification',
+  'title-verification':    'Land / Title Verification',
   'title-cancellation':    'Title Cancellation',
   'land-registration':     'Land Registration',
   'property-consultation': 'Property Consultation',
@@ -88,6 +93,17 @@ export default function TransactionDetailPage() {
   const [remarks, setRemarks]   = useState('')
   const [updating, setUpdating] = useState(false)
   const [propertyMap, setPropertyMap] = useState(null)
+  const [mapEditorOpen, setMapEditorOpen] = useState(false)
+
+  // Accept / Deny gating state
+  const [decisionLoading, setDecisionLoading] = useState(false)
+  const [denyDialog, setDenyDialog] = useState(false)
+  const [denyReason, setDenyReason] = useState('')
+
+  // Delete-transaction state
+  const [deleteDialog, setDeleteDialog] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
 
   const isAdmin = user?.roles?.some(r => r.name === 'admin')
   const isStaff = user?.roles?.some(r => r.name === 'staff' || r.name === 'agent')
@@ -165,6 +181,45 @@ export default function TransactionDetailPage() {
     setTx(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== docId) }))
   }
 
+  // ─── Admin Accept / Deny on a fresh submission ───────────────────
+  const handleAccept = async () => {
+    setDecisionLoading(true)
+    try {
+      const { data } = await api.put(`/transactions/${id}`, {
+        status: 'verification ongoing',
+        remarks: 'Submission accepted — verification in progress.',
+      })
+      setTx(data)
+    } catch { /* silent */ }
+    finally { setDecisionLoading(false) }
+  }
+
+  const handleDeny = async () => {
+    setDecisionLoading(true)
+    try {
+      const { data } = await api.put(`/transactions/${id}`, {
+        status: 'rejected',
+        remarks: denyReason.trim() || 'Submission denied.',
+      })
+      setTx(data)
+      setDenyDialog(false)
+      setDenyReason('')
+    } catch { /* silent */ }
+    finally { setDecisionLoading(false) }
+  }
+
+  const handleDeleteTransaction = async () => {
+    setDeleting(true)
+    try {
+      await api.delete(`/transactions/${id}`)
+      const homePath = isAdmin ? '/admin/transactions' : '/portal/transactions'
+      navigate(homePath, { replace: true })
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Failed to delete transaction.')
+      setDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <Box sx={{ minHeight: '100%', bgcolor: '#F4F6FA' }}>
@@ -219,14 +274,26 @@ export default function TransactionDetailPage() {
                 {SERVICE_LABELS[tx.service_type] || tx.service_type} · Filed {new Date(tx.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
               </Typography>
             </Box>
-            {canEdit && (
-              <Button variant="outlined" startIcon={<EditIcon />}
-                onClick={() => { setStatusDialog(true); setNewStatus(tx.status) }}
-                sx={{ color: GOLD, borderColor: `${GOLD}50`, fontWeight: 700,
-                  '&:hover': { borderColor: GOLD, bgcolor: `${GOLD}10` } }}>
-                Update Status
-              </Button>
-            )}
+            <Box sx={{ display: 'flex', gap: 1.2, flexWrap: 'wrap' }}>
+              {canEdit && (
+                <Button variant="outlined" startIcon={<EditIcon />}
+                  onClick={() => { setStatusDialog(true); setNewStatus(tx.status) }}
+                  sx={{ color: GOLD, borderColor: `${GOLD}50`, fontWeight: 700,
+                    '&:hover': { borderColor: GOLD, bgcolor: `${GOLD}10` } }}>
+                  Update Status
+                </Button>
+              )}
+              {isAdmin && (
+                <Tooltip title="Delete this transaction permanently">
+                  <Button variant="outlined" startIcon={<DeleteIcon />}
+                    onClick={() => { setDeleteConfirmText(''); setDeleteDialog(true) }}
+                    sx={{ color: '#FCA5A5', borderColor: 'rgba(252,165,165,0.45)', fontWeight: 700,
+                      '&:hover': { borderColor: '#EF4444', color: '#EF4444', bgcolor: 'rgba(239,68,68,0.1)' } }}>
+                    Delete
+                  </Button>
+                </Tooltip>
+              )}
+            </Box>
           </Box>
         </Box>
       </Box>
@@ -238,6 +305,70 @@ export default function TransactionDetailPage() {
           <Alert severity="success" icon={<CheckCircleOutlinedIcon />} sx={{ mb: 3, borderRadius: 2 }}>
             Transaction submitted successfully! Our team will review your request shortly.
           </Alert>
+        )}
+
+        {/* ═══ ADMIN DECISION BANNER — only on fresh submissions ═══ */}
+        {isAdmin && tx.status === 'submitted' && (
+          <Card sx={{
+            mb: 3,
+            background: `linear-gradient(135deg, ${NAVY} 0%, #13284A 100%)`,
+            border: 'none',
+            boxShadow: `0 8px 32px rgba(10,22,40,0.18)`,
+            overflow: 'hidden',
+          }}>
+            <Box sx={{
+              p: { xs: 2.5, md: 3 },
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: { xs: 'flex-start', md: 'center' },
+              gap: 2.5,
+              justifyContent: 'space-between',
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ width: 52, height: 52, borderRadius: 2, background: `linear-gradient(135deg, ${GOLD} 0%, #9F7E2C 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Typography sx={{ fontSize: '1.4rem' }}>📋</Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: GOLD, letterSpacing: '0.14em', mb: 0.4 }}>
+                    NEW SUBMISSION · AWAITING YOUR DECISION
+                  </Typography>
+                  <Typography sx={{ color: 'white', fontWeight: 800, fontSize: { xs: '1rem', md: '1.1rem' }, mb: 0.4, lineHeight: 1.3 }}>
+                    Accept this transaction to begin verification
+                  </Typography>
+                  <Typography sx={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.82rem', maxWidth: 480 }}>
+                    Once accepted, you can edit the property map and continue the verification process. Denying will notify the client.
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1.2, flexShrink: 0 }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => setDenyDialog(true)}
+                  disabled={decisionLoading}
+                  sx={{
+                    color: 'white',
+                    borderColor: 'rgba(255,255,255,0.35)',
+                    borderWidth: '1.5px',
+                    fontWeight: 700,
+                    px: 2.5,
+                    '&:hover': { borderColor: '#EF4444', color: '#EF4444', bgcolor: 'rgba(239,68,68,0.08)', borderWidth: '1.5px' },
+                  }}
+                >
+                  Deny
+                </Button>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={handleAccept}
+                  disabled={decisionLoading}
+                  startIcon={decisionLoading ? <CircularProgress size={16} sx={{ color: NAVY }} /> : <CheckCircleOutlinedIcon />}
+                  sx={{ fontWeight: 800, px: 3 }}
+                >
+                  {decisionLoading ? 'Working…' : 'Accept'}
+                </Button>
+              </Box>
+            </Box>
+          </Card>
         )}
 
         <Grid container spacing={3}>
@@ -470,12 +601,29 @@ export default function TransactionDetailPage() {
                   <Typography variant="caption" sx={{ color: '#94A3B8' }}>Location and boundary visualization</Typography>
                 </Box>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                 {propertyMap.latitude && (
                   <Chip label="Location Pinned" size="small" sx={{ bgcolor: '#DCFCE7', color: '#166534', fontWeight: 700, fontSize: '0.68rem' }} />
                 )}
                 {propertyMap.geojson_polygon && (
                   <Chip label="Boundary Mapped" size="small" sx={{ bgcolor: `${GOLD}20`, color: '#A8882A', fontWeight: 700, fontSize: '0.68rem' }} />
+                )}
+                {canEdit && tx.status !== 'submitted' && tx.status !== 'rejected' && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<EditIcon sx={{ fontSize: 16 }} />}
+                    onClick={() => setMapEditorOpen(true)}
+                    sx={{
+                      ml: 1,
+                      bgcolor: NAVY, color: 'white',
+                      fontSize: '0.72rem', fontWeight: 700,
+                      px: 1.5, py: 0.6,
+                      '&:hover': { bgcolor: '#060E1A' },
+                    }}
+                  >
+                    Edit Property Map
+                  </Button>
                 )}
               </Box>
             </Box>
@@ -647,16 +795,144 @@ export default function TransactionDetailPage() {
 
       </Box>
 
+      {/* Property map editor (admin/staff only) */}
+      {canEdit && propertyMap && (
+        <PropertyMapEditor
+          open={mapEditorOpen}
+          onClose={() => setMapEditorOpen(false)}
+          transactionId={tx.id}
+          initialPin={propertyMap.latitude && propertyMap.longitude
+            ? { lat: parseFloat(propertyMap.latitude), lng: parseFloat(propertyMap.longitude) }
+            : null}
+          initialPolygon={propertyMap.geojson_polygon}
+          onSaved={(updatedMap) => setPropertyMap(prev => ({ ...prev, ...updatedMap }))}
+        />
+      )}
+
+      {/* Delete transaction confirmation (admin only) */}
+      <Dialog open={deleteDialog} onClose={() => !deleting && setDeleteDialog(false)} maxWidth="xs" fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+          <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <DeleteIcon sx={{ color: '#DC2626' }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 800, color: NAVY, fontSize: '1rem', lineHeight: 1.2 }}>Delete this transaction?</Typography>
+            <Typography variant="caption" sx={{ color: '#64748B' }}>This action cannot be undone.</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Box sx={{ p: 2, bgcolor: '#F8FAFC', border: '1px solid #E5EAF2', borderRadius: 2, mb: 2 }}>
+            <Typography sx={{ fontFamily: 'monospace', fontWeight: 800, color: NAVY, fontSize: '0.9rem', mb: 0.5 }}>
+              {tx.transaction_code}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748B', display: 'block' }}>
+              {SERVICE_LABELS[tx.service_type] || tx.service_type}
+            </Typography>
+            {tx.user?.name && (
+              <Typography variant="caption" sx={{ color: '#64748B' }}>
+                Client: <strong style={{ color: '#0A1628' }}>{tx.user.name}</strong>
+              </Typography>
+            )}
+          </Box>
+          <Typography variant="body2" sx={{ color: '#475569', mb: 1.5, lineHeight: 1.7 }}>
+            All <strong>documents, messages, payments, property map and logs</strong> linked to this transaction will be permanently removed (including uploaded files in storage).
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mb: 1 }}>
+            Type <strong style={{ color: '#DC2626', fontFamily: 'monospace' }}>{tx.transaction_code}</strong> below to confirm.
+          </Typography>
+          <TextField
+            fullWidth
+            size="small"
+            value={deleteConfirmText}
+            onChange={(e) => setDeleteConfirmText(e.target.value)}
+            placeholder="Transaction code"
+            autoFocus
+            inputProps={{ style: { fontFamily: 'monospace' } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button onClick={() => setDeleteDialog(false)} disabled={deleting} sx={{ color: '#64748B', fontWeight: 600 }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleDeleteTransaction}
+            disabled={deleting || deleteConfirmText.trim() !== tx.transaction_code}
+            startIcon={deleting ? <CircularProgress size={14} sx={{ color: 'white' }} /> : <DeleteIcon />}
+            sx={{ bgcolor: '#DC2626', '&:hover': { bgcolor: '#B91C1C' }, fontWeight: 700, boxShadow: '0 4px 12px rgba(220,38,38,0.3)' }}
+          >
+            {deleting ? 'Deleting…' : 'Delete permanently'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Deny confirmation dialog */}
+      <Dialog open={denyDialog} onClose={() => !decisionLoading && setDenyDialog(false)} maxWidth="xs" fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+          <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Typography sx={{ fontSize: '1.2rem' }}>✕</Typography>
+          </Box>
+          <Box>
+            <Typography sx={{ fontWeight: 800, color: NAVY, fontSize: '1rem', lineHeight: 1.2 }}>Deny this submission?</Typography>
+            <Typography variant="caption" sx={{ color: '#64748B' }}>The client will be notified.</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="Reason (shown to client)"
+            placeholder="e.g. Title number does not match LRA records. Please re-submit with the correct document."
+            value={denyReason}
+            onChange={(e) => setDenyReason(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button onClick={() => setDenyDialog(false)} disabled={decisionLoading} sx={{ color: '#64748B', fontWeight: 600 }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleDeny}
+            disabled={decisionLoading}
+            startIcon={decisionLoading ? <CircularProgress size={14} sx={{ color: 'white' }} /> : null}
+            sx={{ bgcolor: '#DC2626', '&:hover': { bgcolor: '#B91C1C' }, fontWeight: 700 }}
+          >
+            {decisionLoading ? 'Denying…' : 'Confirm Deny'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Status update dialog */}
       <Dialog open={statusDialog} onClose={() => setStatusDialog(false)} PaperProps={{ sx: { borderRadius: 3, minWidth: 400 } }}>
         <DialogTitle sx={{ fontWeight: 800, color: NAVY, pb: 1 }}>Update Transaction Status</DialogTitle>
         <DialogContent sx={{ pt: 1 }}>
+          {!isAdmin && isStaff && (
+            <Alert severity="info" sx={{ mb: 2, borderRadius: 2, fontSize: '0.8rem' }}>
+              Once your review is complete, set status to <strong>Pending Approval</strong>. Only an admin can give the final <strong>Approved</strong> verdict.
+            </Alert>
+          )}
           <FormControl fullWidth size="small" sx={{ mb: 2.5 }}>
             <InputLabel>New Status</InputLabel>
             <Select label="New Status" value={newStatus} onChange={e => setNewStatus(e.target.value)}>
-              {Object.keys(STATUS_META).map(s => (
-                <MenuItem key={s} value={s}><StatusBadge status={s} /></MenuItem>
-              ))}
+              {Object.keys(STATUS_META).map(s => {
+                const isAdminOnly = ADMIN_ONLY_STATUSES.includes(s)
+                const disabled = isAdminOnly && !isAdmin
+                return (
+                  <MenuItem key={s} value={s} disabled={disabled}>
+                    <StatusBadge status={s} />
+                    {disabled && (
+                      <Typography variant="caption" sx={{ ml: 'auto', color: '#94A3B8', fontStyle: 'italic' }}>
+                        Admin only
+                      </Typography>
+                    )}
+                  </MenuItem>
+                )
+              })}
             </Select>
           </FormControl>
           <TextField fullWidth label="Remarks / Notes (optional)" value={remarks} onChange={e => setRemarks(e.target.value)}

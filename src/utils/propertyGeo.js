@@ -6,6 +6,7 @@ export const STATUS_META = {
   'verification ongoing':     { label: 'Verifying',    color: INFO      },
   'processing':               { label: 'Processing',   color: WARNING   },
   'waiting for requirements': { label: 'Waiting',      color: GOLD_DARK },
+  'pending approval':         { label: 'Pending Approval', color: '#7C3AED' },
   'approved':                 { label: 'Approved',     color: SUCCESS   },
   'released':                 { label: 'Released',     color: SUCCESS   },
   'rejected':                 { label: 'Rejected',     color: DANGER    },

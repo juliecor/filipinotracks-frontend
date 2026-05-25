@@ -5,7 +5,7 @@ import TwitterIcon from '@mui/icons-material/Twitter'
 import { NAVY, GOLD, GOLD_LIGHT } from '../../theme/theme'
 
 const links = {
-  Services: ['Title Verification', 'Title Transfer', 'Tax Declaration', 'Mortgage Annotation', 'Land Registration'],
+  Services: ['Land / Title Verification', 'Title Cancellation', 'Land Registration', 'Property Consultation'],
   Company: ['About Us', 'Our Team', 'Careers', 'Partners', 'Contact'],
   Support: ['Help Center', 'Track Transaction', 'Document Checklist', 'Privacy Policy', 'Terms of Service'],
 }

@@ -7,7 +7,7 @@ import SupportAgentIcon from '@mui/icons-material/SupportAgent'
 import { NAVY, NAVY_SURFACE, NAVY_LINE, GOLD, INFO, WARNING, DANGER } from '../../theme/theme'
 
 const services = [
-  { icon: <VerifiedIcon sx={{ fontSize: 30 }} />, title: 'Title Verification', desc: 'Authenticate and verify the legitimacy of land titles with LRA database cross-referencing.', color: INFO, tag: 'Most Popular' },
+  { icon: <VerifiedIcon sx={{ fontSize: 30 }} />, title: 'Land / Title Verification', desc: 'Authenticate and verify the legitimacy of land titles with LRA database cross-referencing.', color: INFO, tag: 'Most Popular' },
   { icon: <CancelIcon sx={{ fontSize: 30 }} />, title: 'Title Cancellation', desc: 'Legal cancellation of lost, destroyed, or superseded land titles with court coordination.', color: DANGER, tag: '' },
   { icon: <AccountBalanceIcon sx={{ fontSize: 30 }} />, title: 'Land Registration', desc: 'Original registration of unregistered lands, judicial and administrative proceedings.', color: NAVY_LINE, tag: 'Premium' },
   { icon: <SupportAgentIcon sx={{ fontSize: 30 }} />, title: 'Property Consultation', desc: 'Expert advice on property rights, title issues, boundary disputes, and legal strategies.', color: WARNING, tag: '' },

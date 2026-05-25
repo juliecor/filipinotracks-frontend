@@ -25,14 +25,15 @@ const STATUS_META = {
   'under review':             { label: 'Under Review', color: '#3B82F6' },
   'verification ongoing':     { label: 'Verifying',    color: '#06B6D4' },
   'processing':               { label: 'Processing',   color: '#F59E0B' },
-  'waiting for requirements': { label: 'Waiting',      color: '#F97316' },
+  'waiting for requirements': { label: 'Waiting',          color: '#F97316' },
+  'pending approval':         { label: 'Pending Approval', color: '#7C3AED' },
   'approved':                 { label: 'Approved',     color: '#22C55E' },
   'released':                 { label: 'Released',     color: '#16A34A' },
   'rejected':                 { label: 'Rejected',     color: '#EF4444' },
 }
 
 const SERVICE_LABELS = {
-  'title-verification':    'Title Verification',
+  'title-verification':    'Land / Title Verification',
   'title-cancellation':    'Title Cancellation',
   'land-registration':     'Land Registration',
   'property-consultation': 'Property Consultation',

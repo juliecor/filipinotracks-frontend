@@ -15,6 +15,7 @@ const STATUS_META = {
   'under review':             { label: 'Under Review', color: INFO      },
   'verification ongoing':     { label: 'Verifying',    color: INFO      },
   'waiting for requirements': { label: 'Waiting',      color: GOLD_DARK },
+  'pending approval':         { label: 'Pending Approval', color: '#7C3AED' },
   'approved':                 { label: 'Approved',     color: SUCCESS   },
   'released':                 { label: 'Released',     color: SUCCESS   },
 }

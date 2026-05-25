@@ -16,7 +16,7 @@ import { NAVY, GOLD } from '../../theme/theme'
 import { useAuth } from '../../context/AuthContext'
 
 const SERVICE_SHORT = {
-  'title-verification':    'Title Verification',
+  'title-verification':    'Land / Title Verification',
   'title-cancellation':    'Title Cancellation',
   'land-registration':     'Land Registration',
   'property-consultation': 'Property Consultation',

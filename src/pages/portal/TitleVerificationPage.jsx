@@ -17,6 +17,11 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import PolylineIcon from '@mui/icons-material/Polyline'
 import GestureIcon from '@mui/icons-material/Gesture'
+import CloudUploadIcon from '@mui/icons-material/CloudUpload'
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile'
+import ImageIcon from '@mui/icons-material/Image'
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'
+import { useDropzone } from 'react-dropzone'
 import { NAVY, GOLD, GOLD_DARK } from '../../theme/theme'
 import api from '../../api/axios'
 import PropertyMapPicker from '../../components/map/PropertyMapPicker'
@@ -24,7 +29,15 @@ import PropertyBoundaryDrawer from '../../components/map/PropertyBoundaryDrawer'
 import PhLocationPicker from '../../components/PhLocationPicker'
 import { boundariesToPolygon, pointsToGeoJSON } from '../../utils/bearingToPolygon'
 
-const STEPS = ['Property Information', 'Map Location', 'Technical Description', 'Review & Submit']
+const STEPS = ['Property Information', 'Supporting Documents', 'Map Location', 'Boundary', 'Review & Submit']
+
+const ACCEPTED_DOC_TYPES = {
+  'application/pdf': ['.pdf'],
+  'image/jpeg':      ['.jpg', '.jpeg'],
+  'image/png':       ['.png'],
+}
+const MAX_DOC_SIZE = 10 * 1024 * 1024 // 10 MB per file
+const MAX_DOC_COUNT = 5
 
 const PROPERTY_TYPES = [
   { value: 'residential',  label: 'Residential' },
@@ -54,6 +67,92 @@ function StepHeader({ icon, title, subtitle, optional }) {
   )
 }
 
+/* ──────────────────────────────────────────────────────────
+   Documents dropzone — drag/drop or click to attach files
+   ────────────────────────────────────────────────────────── */
+function DocumentsDropzone({ documents, onAdd, onRemove }) {
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: ACCEPTED_DOC_TYPES,
+    maxSize: MAX_DOC_SIZE,
+    maxFiles: MAX_DOC_COUNT,
+    onDrop: onAdd,
+  })
+
+  const fileIcon = (file) => {
+    if (file.type === 'application/pdf') return <PictureAsPdfIcon sx={{ color: '#DC2626' }} />
+    if (file.type?.startsWith('image/'))  return <ImageIcon sx={{ color: '#2563EB' }} />
+    return <InsertDriveFileIcon sx={{ color: '#64748B' }} />
+  }
+  const fmtSize = (bytes) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  }
+
+  return (
+    <Box>
+      {/* Dropzone */}
+      <Box
+        {...getRootProps()}
+        sx={{
+          border: '2px dashed',
+          borderColor: isDragActive ? GOLD : 'divider',
+          borderRadius: 3,
+          py: 4, px: 3,
+          textAlign: 'center',
+          cursor: 'pointer',
+          bgcolor: isDragActive ? `${GOLD}10` : 'action.hover',
+          transition: 'all 0.2s',
+          '&:hover': { borderColor: GOLD, bgcolor: `${GOLD}08` },
+        }}
+      >
+        <input {...getInputProps()} />
+        <CloudUploadIcon sx={{ fontSize: 48, color: isDragActive ? GOLD : 'text.disabled', mb: 1 }} />
+        <Typography sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+          {isDragActive ? 'Drop files here…' : 'Drag and drop files, or click to browse'}
+        </Typography>
+        <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          PDF · JPG · PNG · up to {MAX_DOC_SIZE / 1024 / 1024}MB per file
+        </Typography>
+      </Box>
+
+      {/* File list */}
+      {documents.length > 0 && (
+        <Box sx={{ mt: 2.5 }}>
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.1em', mb: 1.2 }}>
+            {documents.length} {documents.length === 1 ? 'file' : 'files'} ready to upload
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {documents.map((file, i) => (
+              <Box key={i} sx={{
+                display: 'flex', alignItems: 'center', gap: 1.5,
+                p: 1.5, borderRadius: 2,
+                border: 1, borderColor: 'divider',
+                bgcolor: 'background.paper',
+              }}>
+                {fileIcon(file)}
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {file.name}
+                  </Typography>
+                  <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>
+                    {fmtSize(file.size)}
+                  </Typography>
+                </Box>
+                <Tooltip title="Remove">
+                  <IconButton size="small" onClick={() => onRemove(i)} sx={{ color: 'error.main' }}>
+                    <DeleteIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+    </Box>
+  )
+}
+
 export default function TitleVerificationPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
@@ -71,6 +170,7 @@ export default function TitleVerificationPage() {
   const [drawnPoints, setDrawnPoints] = useState([])
   const [boundaryMethod, setBoundaryMethod] = useState('draw') // 'draw' | 'bearings'
   const [fieldErrors, setFieldErrors] = useState({})
+  const [documents, setDocuments] = useState([])  // File[] staged for upload at submit time
 
   // Setter that also clears the field's error once the user starts editing.
   const set = (k) => (e) => {
@@ -99,15 +199,29 @@ export default function TitleVerificationPage() {
       if (Object.keys(errs).length > 0) {
         setFieldErrors(errs)
         setError('Please fill in the required fields highlighted below.')
-        // Scroll to top so user sees the error banner
         window.scrollTo({ top: 0, behavior: 'smooth' })
         return
       }
+    }
+    if (step === 1 && documents.length === 0) {
+      setError('Please upload at least one supporting document before continuing.')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
     }
     setError('')
     setFieldErrors({})
     setStep(s => s + 1)
   }
+
+  // Document upload handlers
+  const handleAddDocs = (files) => {
+    const filtered = files.filter(f => f.size <= MAX_DOC_SIZE)
+    setDocuments(prev => [...prev, ...filtered].slice(0, MAX_DOC_COUNT))
+    const rejected = files.length - filtered.length
+    if (rejected > 0) setError(`${rejected} file(s) skipped — max size is ${MAX_DOC_SIZE / 1024 / 1024} MB each.`)
+    else setError('')
+  }
+  const handleRemoveDoc = (i) => setDocuments(prev => prev.filter((_, idx) => idx !== i))
 
   // Compute polygon from currently-selected method
   const computedFromBearings = location.lat
@@ -157,6 +271,19 @@ export default function TitleVerificationPage() {
         boundaries: boundaryMethod === 'bearings' && hasBearings ? boundaries : [],
       })
 
+      // 4. Upload supporting documents (required) — sequential to keep error handling simple
+      for (const file of documents) {
+        const fd = new FormData()
+        fd.append('file', file)
+        try {
+          await api.post(`/transactions/${tx.id}/documents`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+        } catch {
+          // Continue uploading the rest — the transaction is already created
+        }
+      }
+
       navigate(`/portal/transactions/${tx.id}`, { state: { new: true } })
     } catch (err) {
       setError(err.response?.data?.message || 'Submission failed. Please try again.')
@@ -175,7 +302,7 @@ export default function TitleVerificationPage() {
             sx={{ color: 'rgba(255,255,255,0.6)', mb: 2, fontWeight: 600, '&:hover': { color: 'white', bgcolor: 'rgba(255,255,255,0.08)' } }}>
             Back
           </Button>
-          <Typography variant="h5" sx={{ color: 'white', fontWeight: 800, mb: 0.5 }}>Title Verification Request</Typography>
+          <Typography variant="h5" sx={{ color: 'white', fontWeight: 800, mb: 0.5 }}>Land / Title Verification Request</Typography>
           <Typography sx={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem' }}>
             Submit your property details for professional title verification
           </Typography>
@@ -282,7 +409,23 @@ export default function TitleVerificationPage() {
             )}
 
             {/* ── STEP 2: Map Location ── */}
+            {/* ── STEP 2: Supporting Documents ── */}
             {step === 1 && (
+              <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
+                <StepHeader
+                  icon={<CloudUploadIcon sx={{ color: NAVY, fontSize: 20 }} />}
+                  title="Supporting Documents"
+                  subtitle="Attach a copy of the land title and any supporting documents"
+                />
+                <Alert severity="info" icon={<InfoOutlinedIcon />} sx={{ mb: 2.5, borderRadius: 2, fontSize: '0.82rem' }}>
+                  <strong>Required.</strong> Upload at least one document (TCT/OCT/CCT, tax declaration, deed of sale, or any proof of ownership). Accepted formats: <strong>PDF, JPG, PNG</strong> · max <strong>10MB</strong> each · up to <strong>{MAX_DOC_COUNT}</strong> files.
+                </Alert>
+
+                <DocumentsDropzone documents={documents} onAdd={handleAddDocs} onRemove={handleRemoveDoc} />
+              </Paper>
+            )}
+
+            {step === 2 && (
               <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
                 <StepHeader
                   icon={<MapIcon sx={{ color: NAVY, fontSize: 20 }} />}
@@ -310,7 +453,7 @@ export default function TitleVerificationPage() {
             )}
 
             {/* ── STEP 3: Boundary Definition ── */}
-            {step === 2 && (
+            {step === 3 && (
               <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
                 <StepHeader
                   icon={<PolylineIcon sx={{ color: NAVY, fontSize: 20 }} />}
@@ -445,7 +588,7 @@ export default function TitleVerificationPage() {
             )}
 
             {/* ── STEP 4: Review & Submit ── */}
-            {step === 3 && (
+            {step === 4 && (
               <Paper sx={{ p: { xs: 2, md: 3.5 }, borderRadius: 3, boxShadow: '0 2px 12px rgba(10,22,40,0.07)' }}>
                 <StepHeader icon={<CheckCircleIcon sx={{ color: NAVY, fontSize: 20 }} />} title="Review & Submit" subtitle="Confirm your details before submitting" />
 
@@ -477,6 +620,18 @@ export default function TitleVerificationPage() {
                         <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B' }}>{info.full_address}</Typography>
                       </Box>
                     )}
+                  </Box>
+
+                  <Divider />
+
+                  {/* Documents summary */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                    <Chip
+                      icon={<CloudUploadIcon sx={{ fontSize: 14 }} />}
+                      label={`✓ ${documents.length} ${documents.length === 1 ? 'document' : 'documents'} attached`}
+                      size="small"
+                      sx={{ bgcolor: '#DCFCE7', color: '#166534', fontWeight: 700 }}
+                    />
                   </Box>
 
                   <Divider />
@@ -515,14 +670,14 @@ export default function TitleVerificationPage() {
             Back
           </Button>
           <Box sx={{ display: 'flex', gap: 1.5 }}>
-            {step < 3 ? (
+            {step < 4 ? (
               <Button
                 variant="contained"
                 endIcon={<ArrowForwardIcon />}
                 onClick={handleNext}
                 sx={{ fontWeight: 700, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, color: NAVY, px: 3 }}
               >
-                {step === 1 && !location.lat ? 'Skip Location' : step === 2 && !hasBoundaries ? 'Skip' : 'Next'}
+                {step === 2 && !location.lat ? 'Skip Location' : step === 3 && !hasBoundaries ? 'Skip' : 'Next'}
               </Button>
             ) : (
               <Button

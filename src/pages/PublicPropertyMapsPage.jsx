@@ -86,7 +86,7 @@ export default function PublicPropertyMapsPage() {
   const [filters, setFilters]   = useState({ hasPin: false, hasBoundary: false, province: null })
   const [activeId, setActiveId] = useState(null)
   const [infoMap, setInfoMap]   = useState(null)
-  const [mapType, setMapType]   = useState('hybrid')
+  const [mapType, setMapType]   = useState('satellite')
   const [mapTheme, setMapTheme] = useState('default')
   const [themeAnchor, setThemeAnchor] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
@@ -238,7 +238,7 @@ export default function PublicPropertyMapsPage() {
         }}>
           <ToggleButtonGroup value={mapType} exclusive onChange={(_, v) => v && setMapType(v)} size="small"
             sx={{ bgcolor: 'white', boxShadow: '0 4px 12px rgba(10,22,40,0.15)', borderRadius: 1.5 }}>
-            <ToggleButton value="hybrid"  sx={{ px: 1.3, py: 0.6, fontSize: '0.72rem', fontWeight: 700, border: 'none' }}>
+            <ToggleButton value="satellite"  sx={{ px: 1.3, py: 0.6, fontSize: '0.72rem', fontWeight: 700, border: 'none' }}>
               <SatelliteAltIcon sx={{ fontSize: 15, mr: 0.5 }} />
               {!isMobile && 'Satellite'}
             </ToggleButton>

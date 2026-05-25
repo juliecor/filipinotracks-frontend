@@ -15,7 +15,7 @@ import api from '../../api/axios'
 import { NAVY, GOLD } from '../../theme/theme'
 
 const SERVICES = [
-  { value: 'title-verification',    label: 'Title Verification',    desc: 'Verify authenticity and status of a land title',         icon: '🔍' },
+  { value: 'title-verification',    label: 'Land / Title Verification',    desc: 'Verify authenticity and status of a land title',         icon: '🔍' },
   { value: 'title-cancellation',    label: 'Title Cancellation',    desc: 'Process cancellation of an existing land title',         icon: '❌' },
   { value: 'land-registration',     label: 'Land Registration',     desc: 'Register a new land with the relevant agencies',         icon: '📝' },
   { value: 'property-consultation', label: 'Property Consultation', desc: 'Expert consultation on property documentation matters',  icon: '💼' },
