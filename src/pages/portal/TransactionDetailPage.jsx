@@ -14,6 +14,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile'
 import DeleteIcon from '@mui/icons-material/Delete'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import EditIcon from '@mui/icons-material/Edit'
+import EmailIcon from '@mui/icons-material/Email'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import ChatIcon from '@mui/icons-material/Chat'
 import SendIcon from '@mui/icons-material/Send'
@@ -104,6 +105,14 @@ export default function TransactionDetailPage() {
   const [deleteDialog, setDeleteDialog] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+
+  // On-demand email state
+  const [emailDialog, setEmailDialog] = useState(false)
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailBody, setEmailBody] = useState('')
+  const [emailFiles, setEmailFiles] = useState([])         // File[]
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailResult, setEmailResult] = useState(null)     // { type: 'success'|'error', message }
 
   const isAdmin = user?.roles?.some(r => r.name === 'admin')
   const isStaff = user?.roles?.some(r => r.name === 'staff' || r.name === 'agent')
@@ -220,6 +229,61 @@ export default function TransactionDetailPage() {
     }
   }
 
+  const openEmailDialog = () => {
+    setEmailSubject('')
+    setEmailBody('')
+    setEmailFiles([])
+    setEmailResult(null)
+    setEmailDialog(true)
+  }
+
+  const MAX_EMAIL_FILE_SIZE  = 10 * 1024 * 1024  // 10 MB / file
+  const MAX_EMAIL_FILE_COUNT = 5
+
+  const handleAttachFiles = (e) => {
+    const incoming = Array.from(e.target.files || [])
+    e.target.value = ''  // allow re-selecting the same file later
+    const filtered = incoming.filter(f => f.size <= MAX_EMAIL_FILE_SIZE)
+    const merged   = [...emailFiles, ...filtered].slice(0, MAX_EMAIL_FILE_COUNT)
+    setEmailFiles(merged)
+    const rejected = incoming.length - filtered.length
+    if (rejected > 0) {
+      setEmailResult({ type: 'error', message: `${rejected} file(s) skipped — max ${MAX_EMAIL_FILE_SIZE / 1024 / 1024} MB each.` })
+    } else if (emailResult?.type === 'error') {
+      setEmailResult(null)
+    }
+  }
+
+  const handleRemoveAttachment = (i) =>
+    setEmailFiles(prev => prev.filter((_, idx) => idx !== i))
+
+  const handleSendEmail = async () => {
+    setEmailSending(true)
+    setEmailResult(null)
+    try {
+      const fd = new FormData()
+      fd.append('subject', emailSubject.trim())
+      fd.append('body',    emailBody.trim())
+      emailFiles.forEach((f) => fd.append('attachments[]', f))
+
+      const { data } = await api.post(`/transactions/${id}/email-client`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setEmailResult({ type: 'success', message: data.message || 'Email sent.' })
+      setEmailSubject('')
+      setEmailBody('')
+      setEmailFiles([])
+      setTimeout(() => setEmailDialog(false), 1500)
+    } catch (err) {
+      setEmailResult({
+        type: 'error',
+        message: err?.response?.data?.message || 'Failed to send email. Try again.',
+      })
+    } finally {
+      setEmailSending(false)
+    }
+  }
+
   if (loading) {
     return (
       <Box sx={{ minHeight: '100%', bgcolor: '#F4F6FA' }}>
@@ -275,6 +339,16 @@ export default function TransactionDetailPage() {
               </Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1.2, flexWrap: 'wrap' }}>
+              {canEdit && (
+                <Tooltip title="Send a custom email to the client">
+                  <Button variant="outlined" startIcon={<EmailIcon />}
+                    onClick={openEmailDialog}
+                    sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.35)', fontWeight: 700,
+                      '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.08)' } }}>
+                    Email Client
+                  </Button>
+                </Tooltip>
+              )}
               {canEdit && (
                 <Button variant="outlined" startIcon={<EditIcon />}
                   onClick={() => { setStatusDialog(true); setNewStatus(tx.status) }}
@@ -808,6 +882,166 @@ export default function TransactionDetailPage() {
           onSaved={(updatedMap) => setPropertyMap(prev => ({ ...prev, ...updatedMap }))}
         />
       )}
+
+      {/* Email Client compose dialog (admin/staff) */}
+      <Dialog
+        open={emailDialog}
+        onClose={() => !emailSending && setEmailDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+          <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: `${GOLD}1F`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <EmailIcon sx={{ color: GOLD }} />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 800, color: NAVY, fontSize: '1rem', lineHeight: 1.2 }}>
+              Email the client
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#64748B', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              To: <strong style={{ color: '#0A1628' }}>{tx.user?.name || 'Client'}</strong>
+              {tx.user?.email && (
+                <span style={{ color: '#94A3B8' }}> · {tx.user.email}</span>
+              )}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Box sx={{ p: 1.5, mb: 2, borderRadius: 2, bgcolor: '#F8FAFC', border: '1px solid #E5EAF2', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="caption" sx={{ color: '#64748B' }}>Re:</Typography>
+            <Typography sx={{ fontFamily: 'monospace', fontWeight: 700, color: NAVY, fontSize: '0.85rem' }}>
+              {tx.transaction_code}
+            </Typography>
+            <Chip
+              label={SERVICE_LABELS[tx.service_type] || tx.service_type}
+              size="small"
+              sx={{ ml: 'auto', fontSize: '0.65rem', fontWeight: 700, bgcolor: `${GOLD}18`, color: '#9F7E2C' }}
+            />
+          </Box>
+
+          <TextField
+            fullWidth
+            label="Subject"
+            placeholder="e.g. Additional document needed"
+            value={emailSubject}
+            onChange={(e) => setEmailSubject(e.target.value)}
+            disabled={emailSending}
+            inputProps={{ maxLength: 140 }}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            multiline
+            rows={6}
+            label="Message"
+            placeholder={`Hi ${tx.user?.name?.split(' ')[0] || 'there'},\n\n…`}
+            value={emailBody}
+            onChange={(e) => setEmailBody(e.target.value)}
+            disabled={emailSending}
+            inputProps={{ maxLength: 5000 }}
+            helperText={`${emailBody.length} / 5000 characters`}
+          />
+
+          {/* Attachments */}
+          <Box sx={{ mt: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+              <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Attachments ({emailFiles.length}/{MAX_EMAIL_FILE_COUNT})
+              </Typography>
+              <Button
+                component="label"
+                size="small"
+                startIcon={<AttachFileIcon sx={{ fontSize: 16 }} />}
+                disabled={emailSending || emailFiles.length >= MAX_EMAIL_FILE_COUNT}
+                sx={{ fontSize: '0.72rem', fontWeight: 700, color: GOLD, '&:hover': { bgcolor: `${GOLD}10` } }}
+              >
+                Add file
+                <input
+                  type="file"
+                  hidden
+                  multiple
+                  accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
+                  onChange={handleAttachFiles}
+                />
+              </Button>
+            </Box>
+
+            {emailFiles.length === 0 ? (
+              <Box sx={{
+                border: '1.5px dashed', borderColor: 'divider', borderRadius: 2,
+                py: 1.5, textAlign: 'center', bgcolor: 'action.hover',
+              }}>
+                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                  📎 Optional · PDF, images, docs · max 10 MB each · up to {MAX_EMAIL_FILE_COUNT} files
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
+                {emailFiles.map((file, i) => (
+                  <Box key={i} sx={{
+                    display: 'flex', alignItems: 'center', gap: 1.2,
+                    p: 1, pl: 1.5, borderRadius: 1.5,
+                    border: 1, borderColor: 'divider', bgcolor: 'background.paper',
+                  }}>
+                    <AttachFileIcon sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.8rem', color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {file.name}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.68rem', color: 'text.disabled' }}>
+                        {file.size < 1024 ? `${file.size} B`
+                          : file.size < 1024 * 1024 ? `${(file.size / 1024).toFixed(1)} KB`
+                          : `${(file.size / 1024 / 1024).toFixed(1)} MB`}
+                      </Typography>
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleRemoveAttachment(i)}
+                      disabled={emailSending}
+                      sx={{ color: 'error.main' }}
+                      aria-label={`Remove ${file.name}`}
+                    >
+                      <DeleteIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+
+          {emailResult && (
+            <Alert
+              severity={emailResult.type}
+              sx={{ mt: 2, borderRadius: 2 }}
+            >
+              {emailResult.message}
+            </Alert>
+          )}
+
+          <Box sx={{ mt: 2, p: 1.5, bgcolor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 1.5 }}>
+            <Typography variant="caption" sx={{ color: '#92400E', lineHeight: 1.6, display: 'block' }}>
+              💡 <strong>Tip:</strong> The email is sent from FilipinoTracks but uses your name in the signature. The client can <strong>reply directly</strong> to reach you at <strong>{user?.email}</strong>.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button onClick={() => setEmailDialog(false)} disabled={emailSending} sx={{ color: '#64748B', fontWeight: 600 }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={handleSendEmail}
+            disabled={emailSending || !emailSubject.trim() || !emailBody.trim()}
+            startIcon={emailSending ? <CircularProgress size={14} sx={{ color: NAVY }} /> : <SendIcon />}
+            sx={{ fontWeight: 800, px: 3 }}
+          >
+            {emailSending ? 'Sending…' : 'Send Email'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Delete transaction confirmation (admin only) */}
       <Dialog open={deleteDialog} onClose={() => !deleting && setDeleteDialog(false)} maxWidth="xs" fullWidth
