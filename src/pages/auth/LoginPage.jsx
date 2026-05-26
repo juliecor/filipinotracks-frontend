@@ -622,56 +622,160 @@ export default function LoginPage() {
         onClose={() => setNotRegisteredDialog(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+        PaperProps={{
+          sx: (theme) => ({
+            borderRadius: 4,
+            overflow: 'hidden',
+            border: `1px solid ${theme.palette.divider}`,
+            boxShadow: theme.palette.mode === 'dark'
+              ? '0 24px 60px rgba(0,0,0,0.55)'
+              : '0 24px 60px rgba(10,22,40,0.18)',
+          }),
+        }}
+        BackdropProps={{
+          sx: {
+            backdropFilter: 'blur(4px)',
+            backgroundColor: 'rgba(10,22,40,0.55)',
+          },
+        }}
       >
-        <Box sx={{
-          background: `linear-gradient(135deg, ${NAVY} 0%, #13284A 100%)`,
-          px: 3, py: 3, textAlign: 'center',
-        }}>
-          <Box sx={{
-            width: 64, height: 64, borderRadius: '50%',
-            bgcolor: 'rgba(239,68,68,0.18)',
-            border: '2px solid rgba(239,68,68,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            mx: 'auto', mb: 2,
-          }}>
-            <PersonOffOutlinedIcon sx={{ fontSize: 32, color: '#FCA5A5' }} />
-          </Box>
-          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '1.1rem', mb: 0.5 }}>
+        {/* Header: soft gold-tinted band with the alert icon */}
+        <Box
+          sx={(theme) => ({
+            position: 'relative',
+            px: 3,
+            pt: 4,
+            pb: 3,
+            textAlign: 'center',
+            background: theme.palette.mode === 'dark'
+              ? `linear-gradient(180deg, ${GOLD}14 0%, transparent 100%)`
+              : `linear-gradient(180deg, ${GOLD}1A 0%, #FFFFFF 100%)`,
+            overflow: 'hidden',
+          })}
+        >
+          {/* Decorative arc */}
+          <Box
+            aria-hidden
+            sx={{
+              position: 'absolute',
+              top: -90,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 280,
+              height: 180,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${GOLD}22 0%, transparent 70%)`,
+              pointerEvents: 'none',
+            }}
+          />
+
+          <MotionDiv
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            style={{ position: 'relative' }}
+          >
+            <Box
+              sx={{
+                width: 68,
+                height: 68,
+                borderRadius: '50%',
+                display: 'grid',
+                placeItems: 'center',
+                mx: 'auto',
+                mb: 2,
+                background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+                color: NAVY,
+                boxShadow: `0 10px 28px ${GOLD}55, inset 0 1px 0 rgba(255,255,255,0.4)`,
+              }}
+            >
+              <PersonOffOutlinedIcon sx={{ fontSize: 34 }} />
+            </Box>
+          </MotionDiv>
+
+          <Typography
+            sx={{ color: 'text.primary', fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.01em' }}
+          >
             Email not registered
           </Typography>
-          <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.6 }}>
-            We couldn't find a FilipinoTracks account for
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.88rem', mt: 0.75, lineHeight: 1.6 }}>
+            We couldn't find a FilipinoTracks account for:
           </Typography>
-          <Typography sx={{ color: GOLD, fontWeight: 700, fontSize: '0.9rem', fontFamily: 'monospace', mt: 0.5, wordBreak: 'break-all' }}>
-            {otpEmail}
-          </Typography>
+
+          <Chip
+            label={otpEmail}
+            size="small"
+            sx={(theme) => ({
+              mt: 1.5,
+              maxWidth: '100%',
+              height: 'auto',
+              py: 0.75,
+              px: 0.5,
+              fontWeight: 700,
+              fontSize: '0.82rem',
+              fontFamily: 'ui-monospace, "JetBrains Mono", monospace',
+              color: theme.palette.mode === 'dark' ? GOLD_LIGHT : GOLD_DARK,
+              bgcolor: theme.palette.mode === 'dark' ? `${GOLD}1A` : `${GOLD}14`,
+              border: `1px solid ${GOLD}40`,
+              '& .MuiChip-label': {
+                whiteSpace: 'normal',
+                wordBreak: 'break-all',
+                px: 1.25,
+              },
+            })}
+          />
         </Box>
 
-        <DialogContent sx={{ p: 3 }}>
-          <Typography sx={{ color: 'text.secondary', fontSize: '0.88rem', lineHeight: 1.7, textAlign: 'center' }}>
-            No login code was sent. Create a free account first, or double-check your email address for typos.
+        <DialogContent sx={{ px: 3, pt: 2.5, pb: 1 }}>
+          <Typography
+            sx={{ color: 'text.secondary', fontSize: '0.9rem', lineHeight: 1.7, textAlign: 'center' }}
+          >
+            No login code was sent. Create a free account, or double-check your email for typos.
           </Typography>
         </DialogContent>
 
-        <DialogActions sx={{ p: 2.5, pt: 0, gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
+        <DialogActions
+          sx={{
+            px: 3,
+            pb: 3,
+            pt: 2,
+            gap: 1.25,
+            flexDirection: { xs: 'column-reverse', sm: 'row' },
+          }}
+        >
           <Button
             fullWidth
             onClick={() => setNotRegisteredDialog(false)}
-            sx={{ color: 'text.secondary', fontWeight: 600 }}
+            sx={{
+              py: 1.1,
+              color: 'text.secondary',
+              fontWeight: 600,
+              borderRadius: 2,
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
           >
-            Try a different email
+            Try different email
           </Button>
           <Button
             fullWidth
             variant="contained"
-            color="secondary"
             startIcon={<PersonAddOutlinedIcon />}
             onClick={() => {
               setNotRegisteredDialog(false)
               navigate('/register', { state: { email: otpEmail } })
             }}
-            sx={{ fontWeight: 800 }}
+            sx={{
+              py: 1.1,
+              fontWeight: 800,
+              borderRadius: 2,
+              background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+              color: NAVY,
+              boxShadow: `0 8px 20px ${GOLD}44`,
+              '&:hover': {
+                background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`,
+                boxShadow: `0 10px 24px ${GOLD}55`,
+              },
+            }}
           >
             Create Account
           </Button>
