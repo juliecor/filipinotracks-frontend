@@ -25,6 +25,7 @@ import { useAuth } from '../../context/AuthContext'
 import PropertyMapViewer from '../../components/map/PropertyMapViewer'
 import PropertyMapEditor from '../../components/map/PropertyMapEditor'
 import DocumentPreview from '../../components/DocumentPreview'
+import ActivityTimeline from '../../components/ActivityTimeline'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 
 const STATUS_META = {
@@ -639,53 +640,18 @@ export default function TransactionDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Activity timeline */}
-            <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: '1px solid #EDF0F7' }}>
-              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: '1px solid #EEF2F7' }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: NAVY }}>Activity Timeline</Typography>
+            {/* Activity timeline — rich, filterable, with icons + relative time */}
+            <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: 1, borderColor: 'divider' }}>
+              <Box sx={{ px: 3, pt: 3, pb: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'text.primary' }}>Activity Timeline</Typography>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {tx.logs?.length || 0} event{tx.logs?.length === 1 ? '' : 's'} recorded
+                  </Typography>
+                </Box>
               </Box>
               <CardContent sx={{ p: 3 }}>
-                {tx.logs?.length === 0 ? (
-                  <Typography variant="body2" sx={{ color: '#94A3B8' }}>No activity recorded yet.</Typography>
-                ) : (
-                  tx.logs?.map((log, i) => {
-                    const isLast = i === tx.logs.length - 1
-                    const dotColor = log.to_status ? (STATUS_META[log.to_status]?.color || NAVY) : NAVY
-                    return (
-                      <Box key={log.id} sx={{ display: 'flex', gap: 1.5, position: 'relative' }}>
-                        {!isLast && (
-                          <Box sx={{ position: 'absolute', left: 9, top: 24, bottom: -4, width: 1.5, bgcolor: '#E8EDF5' }} />
-                        )}
-                        <Box sx={{
-                          width: 20, height: 20, borderRadius: '50%', flexShrink: 0, mt: 0.3, zIndex: 1,
-                          bgcolor: dotColor, boxShadow: `0 0 0 3px white, 0 0 0 4px ${dotColor}30`,
-                        }} />
-                        <Box sx={{ pb: isLast ? 0 : 3, flex: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: NAVY, fontSize: '0.82rem' }}>{log.action}</Typography>
-                          {log.to_status && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-                              {log.from_status && (
-                                <>
-                                  <StatusBadge status={log.from_status} />
-                                  <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 700 }}>→</Typography>
-                                </>
-                              )}
-                              <StatusBadge status={log.to_status} />
-                            </Box>
-                          )}
-                          {log.notes && (
-                            <Box sx={{ mt: 0.8, p: 1, bgcolor: '#F8FAFC', borderRadius: 1.5, borderLeft: `3px solid ${dotColor}` }}>
-                              <Typography variant="caption" sx={{ color: '#475569', fontStyle: 'italic' }}>"{log.notes}"</Typography>
-                            </Box>
-                          )}
-                          <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.68rem', display: 'block', mt: 0.5 }}>
-                            by {log.performed_by?.name} · {new Date(log.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    )
-                  })
-                )}
+                <ActivityTimeline logs={tx.logs || []} />
               </CardContent>
             </Card>
           </Grid>
