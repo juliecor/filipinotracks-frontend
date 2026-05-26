@@ -3,7 +3,10 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom'
 import {
   Box, Button, TextField, Typography, Alert, CircularProgress,
   InputAdornment, IconButton, Divider, Stack, Chip, Link as MuiLink,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material'
+import PersonOffOutlinedIcon from '@mui/icons-material/PersonOffOutlined'
+import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined'
 import { motion, AnimatePresence } from 'framer-motion'
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
@@ -45,6 +48,7 @@ export default function LoginPage() {
   const [info, setInfo]         = useState('')
   const [loading, setLoading]   = useState(false)
   const [showPass, setShowPass] = useState(false)
+  const [notRegisteredDialog, setNotRegisteredDialog] = useState(false)
   const { login, setUserFromToken } = useAuth()
   const navigate = useNavigate()
 
@@ -69,13 +73,20 @@ export default function LoginPage() {
   const handleSendOtp = async (e) => {
     e.preventDefault()
     setError('')
+    setInfo('')
     setLoading(true)
     try {
-      await api.post('/auth/otp/send', { email: otpEmail })
-      setInfo('A 6-digit code has been sent to your email.')
+      const { data } = await api.post('/auth/otp/send', { email: otpEmail })
+      setInfo(data?.message || 'A 6-digit code has been sent to your email.')
       setMode('otp-verify')
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      // Backend returns 404 with not_registered=true when the email is unknown —
+      // surface this as a clear popup instead of a generic inline error.
+      if (err.response?.status === 404 && err.response?.data?.not_registered) {
+        setNotRegisteredDialog(true)
+      } else {
+        setError(err.response?.data?.message || 'Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -604,6 +615,68 @@ export default function LoginPage() {
           </Typography>
         </Box>
       </Box>
+
+      {/* ── Email not registered dialog ── */}
+      <Dialog
+        open={notRegisteredDialog}
+        onClose={() => setNotRegisteredDialog(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+      >
+        <Box sx={{
+          background: `linear-gradient(135deg, ${NAVY} 0%, #13284A 100%)`,
+          px: 3, py: 3, textAlign: 'center',
+        }}>
+          <Box sx={{
+            width: 64, height: 64, borderRadius: '50%',
+            bgcolor: 'rgba(239,68,68,0.18)',
+            border: '2px solid rgba(239,68,68,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            mx: 'auto', mb: 2,
+          }}>
+            <PersonOffOutlinedIcon sx={{ fontSize: 32, color: '#FCA5A5' }} />
+          </Box>
+          <Typography sx={{ color: 'white', fontWeight: 800, fontSize: '1.1rem', mb: 0.5 }}>
+            Email not registered
+          </Typography>
+          <Typography sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.6 }}>
+            We couldn't find a FilipinoTracks account for
+          </Typography>
+          <Typography sx={{ color: GOLD, fontWeight: 700, fontSize: '0.9rem', fontFamily: 'monospace', mt: 0.5, wordBreak: 'break-all' }}>
+            {otpEmail}
+          </Typography>
+        </Box>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Typography sx={{ color: 'text.secondary', fontSize: '0.88rem', lineHeight: 1.7, textAlign: 'center' }}>
+            No login code was sent. Create a free account first, or double-check your email address for typos.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2.5, pt: 0, gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <Button
+            fullWidth
+            onClick={() => setNotRegisteredDialog(false)}
+            sx={{ color: 'text.secondary', fontWeight: 600 }}
+          >
+            Try a different email
+          </Button>
+          <Button
+            fullWidth
+            variant="contained"
+            color="secondary"
+            startIcon={<PersonAddOutlinedIcon />}
+            onClick={() => {
+              setNotRegisteredDialog(false)
+              navigate('/register', { state: { email: otpEmail } })
+            }}
+            sx={{ fontWeight: 800 }}
+          >
+            Create Account
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
