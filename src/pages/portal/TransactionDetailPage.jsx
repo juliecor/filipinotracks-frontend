@@ -24,6 +24,8 @@ import { NAVY, GOLD } from '../../theme/theme'
 import { useAuth } from '../../context/AuthContext'
 import PropertyMapViewer from '../../components/map/PropertyMapViewer'
 import PropertyMapEditor from '../../components/map/PropertyMapEditor'
+import DocumentPreview from '../../components/DocumentPreview'
+import VisibilityIcon from '@mui/icons-material/Visibility'
 
 const STATUS_META = {
   'submitted':                { label: 'Submitted',                color: '#8B5CF6', bg: '#F3F0FF' },
@@ -105,6 +107,9 @@ export default function TransactionDetailPage() {
   const [deleteDialog, setDeleteDialog] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
+
+  // Document preview state
+  const [previewIndex, setPreviewIndex] = useState(null)
 
   // On-demand email state
   const [emailDialog, setEmailDialog] = useState(false)
@@ -521,32 +526,58 @@ export default function TransactionDetailPage() {
                 ) : (
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <AnimatePresence>
-                      {tx.documents.map(doc => {
+                      {tx.documents.map((doc, idx) => {
                         const ext = doc.file_type?.includes('pdf') ? 'PDF' : doc.file_type?.includes('image') ? 'IMG' : 'DOC'
                         const extColor = doc.file_type?.includes('pdf') ? '#EF4444' : doc.file_type?.includes('image') ? '#3B82F6' : '#64748B'
                         return (
                           <motion.div key={doc.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 2, borderRadius: 2, border: '1.5px solid #EEF2F7', bgcolor: '#FAFBFC' }}>
+                            <Box
+                              onClick={() => setPreviewIndex(idx)}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => { if (e.key === 'Enter') setPreviewIndex(idx) }}
+                              sx={{
+                                display: 'flex', alignItems: 'center', gap: 1.5, p: 2,
+                                borderRadius: 2,
+                                border: '1.5px solid', borderColor: 'divider',
+                                bgcolor: 'background.paper',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                '&:hover': {
+                                  borderColor: GOLD,
+                                  bgcolor: `${GOLD}08`,
+                                  transform: 'translateX(2px)',
+                                },
+                              }}
+                            >
                               <Box sx={{ width: 40, height: 40, borderRadius: 1.5, bgcolor: `${extColor}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                 <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: extColor }}>{ext}</Typography>
                               </Box>
                               <Box sx={{ flex: 1, minWidth: 0 }}>
-                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {doc.original_name}
                                 </Typography>
-                                <Typography variant="caption" sx={{ color: '#94A3B8' }}>
-                                  {doc.document_type || 'Document'} · {formatBytes(doc.file_size)}
+                                <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+                                  {doc.document_type || 'Document'} · {formatBytes(doc.file_size)} · Click to preview
                                 </Typography>
                               </Box>
-                              <Tooltip title="Open file">
+                              <Tooltip title="Preview">
+                                <IconButton size="small" onClick={(e) => { e.stopPropagation(); setPreviewIndex(idx) }}
+                                  sx={{ bgcolor: `${GOLD}14`, '&:hover': { bgcolor: `${GOLD}30` } }}>
+                                  <VisibilityIcon sx={{ fontSize: 15, color: '#9F7E2C' }} />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Open in new tab">
                                 <IconButton size="small" component="a" href={doc.url} target="_blank" rel="noreferrer"
-                                  sx={{ bgcolor: '#F4F6FA', '&:hover': { bgcolor: `${NAVY}08` } }}>
-                                  <OpenInNewIcon sx={{ fontSize: 15, color: '#64748B' }} />
+                                  onClick={(e) => e.stopPropagation()}
+                                  sx={{ bgcolor: 'action.hover', '&:hover': { bgcolor: `${NAVY}08` } }}>
+                                  <OpenInNewIcon sx={{ fontSize: 15, color: 'text.secondary' }} />
                                 </IconButton>
                               </Tooltip>
                               {(isAdmin || doc.uploaded_by === user?.id) && (
                                 <Tooltip title="Delete">
-                                  <IconButton size="small" onClick={() => handleDeleteDocument(doc.id)}
+                                  <IconButton size="small"
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteDocument(doc.id) }}
                                     sx={{ bgcolor: '#FEF2F2', '&:hover': { bgcolor: '#FEE2E2' } }}>
                                     <DeleteIcon sx={{ fontSize: 15, color: '#EF4444' }} />
                                   </IconButton>
@@ -882,6 +913,14 @@ export default function TransactionDetailPage() {
           onSaved={(updatedMap) => setPropertyMap(prev => ({ ...prev, ...updatedMap }))}
         />
       )}
+
+      {/* Document preview (any uploaded doc) */}
+      <DocumentPreview
+        documents={tx.documents || []}
+        activeIndex={previewIndex}
+        onClose={() => setPreviewIndex(null)}
+        onChangeIndex={(next) => setPreviewIndex(next)}
+      />
 
       {/* Email Client compose dialog (admin/staff) */}
       <Dialog
