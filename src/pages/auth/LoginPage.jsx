@@ -1,19 +1,34 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link as RouterLink } from 'react-router-dom'
 import {
   Box, Button, TextField, Typography, Alert, CircularProgress,
-  InputAdornment, IconButton, Divider,
+  InputAdornment, IconButton, Divider, Stack, Chip, Link as MuiLink,
 } from '@mui/material'
 import { motion, AnimatePresence } from 'framer-motion'
-import EmailIcon from '@mui/icons-material/Email'
-import LockIcon from '@mui/icons-material/Lock'
-import VisibilityIcon from '@mui/icons-material/Visibility'
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import KeyIcon from '@mui/icons-material/Key'
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined'
+import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded'
+import KeyRoundedIcon from '@mui/icons-material/KeyRounded'
+import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded'
+import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined'
+import LandscapeOutlinedIcon from '@mui/icons-material/LandscapeOutlined'
+import BoltRoundedIcon from '@mui/icons-material/BoltRounded'
+import LoginRoundedIcon from '@mui/icons-material/LoginRounded'
+import MarkEmailReadOutlinedIcon from '@mui/icons-material/MarkEmailReadOutlined'
 import { useAuth } from '../../context/AuthContext'
-import { NAVY, GOLD, NAVY_MID } from '../../theme/theme'
+import { NAVY, NAVY_DEEP, NAVY_LINE, GOLD, GOLD_LIGHT, GOLD_DARK } from '../../theme/theme'
 import api from '../../api/axios'
+
+const MotionDiv = motion.div
+
+const BRAND_HIGHLIGHTS = [
+  { icon: <ShieldOutlinedIcon fontSize="small" />,    label: 'LRA Accredited Processing' },
+  { icon: <BoltRoundedIcon fontSize="small" />,        label: 'Real-Time Transaction Tracking' },
+  { icon: <VerifiedRoundedIcon fontSize="small" />,    label: '99.8% Success Rate' },
+  { icon: <LandscapeOutlinedIcon fontSize="small" />,  label: 'Nationwide Coverage' },
+]
 
 function redirectByRole(role, navigate) {
   if (role === 'admin') navigate('/admin/dashboard')
@@ -85,176 +100,508 @@ export default function LoginPage() {
   const switchMode = (m) => { setError(''); setInfo(''); setMode(m) }
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex' }}>
-      {/* Left panel */}
-      <Box sx={{
-        display: { xs: 'none', lg: 'flex' }, width: '50%', flexDirection: 'column',
-        justifyContent: 'center', alignItems: 'center',
-        background: `linear-gradient(135deg, ${NAVY} 0%, ${NAVY_MID} 100%)`,
-        position: 'relative', overflow: 'hidden', p: 8,
-      }}>
-        <Box sx={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)', backgroundSize: '50px 50px' }} />
-        <motion.div animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.5, 0.3] }} transition={{ duration: 8, repeat: Infinity }}>
-          <Box sx={{ position: 'absolute', top: '-15%', right: '-15%', width: 450, height: 450, borderRadius: '50%', background: `radial-gradient(circle, ${GOLD}25 0%, transparent 70%)` }} />
-        </motion.div>
-        <Box sx={{ position: 'relative', textAlign: 'center', maxWidth: 420 }}>
-          <Box sx={{ width: 72, height: 72, borderRadius: 3, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 }}>
-            <Typography variant="h4" sx={{ color: NAVY, fontWeight: 800 }}>FT</Typography>
+    <Box sx={{ minHeight: '100vh', display: 'flex', position: 'relative', overflow: 'hidden' }}>
+      {/* ──────────────────── LEFT: Brand panel ──────────────────── */}
+      <Box
+        sx={{
+          display: { xs: 'none', md: 'flex' },
+          width: { md: '46%', lg: '50%' },
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          background: `linear-gradient(155deg, ${NAVY_LINE} 0%, ${NAVY} 50%, ${NAVY_DEEP} 100%)`,
+          color: '#fff',
+          position: 'relative',
+          overflow: 'hidden',
+          p: { md: 5, lg: 7 },
+        }}
+      >
+        {/* Decorative grid */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute', inset: 0,
+            backgroundImage:
+              'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),' +
+              'linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
+            backgroundSize: '44px 44px',
+            maskImage: 'radial-gradient(ellipse at 30% 25%, #000 35%, transparent 80%)',
+          }}
+        />
+        {/* Gold orb */}
+        <MotionDiv
+          animate={{ scale: [1, 1.12, 1], opacity: [0.35, 0.6, 0.35] }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+          style={{ position: 'absolute', top: '-12%', right: '-12%' }}
+        >
+          <Box sx={{
+            width: 460, height: 460, borderRadius: '50%',
+            background: `radial-gradient(circle, ${GOLD}45 0%, transparent 70%)`,
+            filter: 'blur(4px)',
+          }} />
+        </MotionDiv>
+        {/* Navy bloom bottom-left */}
+        <Box
+          aria-hidden
+          sx={{
+            position: 'absolute', bottom: '-18%', left: '-10%',
+            width: 480, height: 480, borderRadius: '50%',
+            background: `radial-gradient(circle, ${NAVY_LINE}80 0%, transparent 70%)`,
+            filter: 'blur(8px)',
+          }}
+        />
+
+        {/* Top row: logo */}
+        <Stack direction="row" alignItems="center" spacing={1.75} sx={{ position: 'relative', zIndex: 1 }}>
+          <Box
+            sx={{
+              width: 46, height: 46, borderRadius: 2,
+              display: 'grid', placeItems: 'center',
+              background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+              color: NAVY, fontWeight: 800, fontSize: 18,
+              boxShadow: `0 10px 28px ${GOLD}55`,
+            }}
+          >
+            FT
           </Box>
-          <Typography variant="h3" sx={{ color: 'white', fontWeight: 800, mb: 2 }}>FilipinoTracks</Typography>
-          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.65)', fontWeight: 400, lineHeight: 1.7 }}>
-            Philippine Property Documentation & Land Transaction Platform
+          <Box>
+            <Typography sx={{ fontWeight: 800, lineHeight: 1.1, fontSize: '1.05rem' }}>
+              FilipinoTracks
+            </Typography>
+            <Typography sx={{ color: 'rgba(255,255,255,0.55)', letterSpacing: '0.14em', fontSize: '0.65rem', fontWeight: 600 }}>
+              PROPERTY · DOCUMENTATION · TRUST
+            </Typography>
+          </Box>
+        </Stack>
+
+        {/* Middle: headline */}
+        <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 500 }}>
+          <Chip
+            label="WELCOME BACK"
+            size="small"
+            sx={{
+              mb: 2.5, bgcolor: `${GOLD}1F`, color: GOLD_LIGHT,
+              fontWeight: 700, letterSpacing: '0.18em', fontSize: '0.65rem',
+              border: `1px solid ${GOLD}40`,
+            }}
+          />
+          <Typography
+            sx={{
+              fontWeight: 800, lineHeight: 1.12, color: '#fff',
+              fontSize: { md: '2.3rem', lg: '2.9rem' },
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Your land,{' '}
+            <Box component="span" sx={{ color: GOLD_LIGHT }}>documented</Box>
+            <br />
+            and{' '}
+            <Box component="span" sx={{ color: GOLD_LIGHT }}>defended.</Box>
           </Typography>
-          <Box sx={{ mt: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {['LRA Accredited Processing', 'Real-Time Transaction Tracking', '99.8% Success Rate', 'Nationwide Coverage'].map((item) => (
-              <Box key={item} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: `${GOLD}25`, border: `1px solid ${GOLD}50`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: GOLD }} />
+          <Typography
+            sx={{
+              mt: 2.5, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7,
+              fontSize: '0.98rem', maxWidth: 460,
+            }}
+          >
+            Sign in to manage your title verifications, boundary surveys, and registration
+            filings — all on the Philippines' most trusted property platform.
+          </Typography>
+
+          <Stack spacing={1.5} sx={{ mt: 4 }}>
+            {BRAND_HIGHLIGHTS.map((item) => (
+              <Stack key={item.label} direction="row" spacing={1.5} alignItems="center">
+                <Box
+                  sx={{
+                    width: 32, height: 32, borderRadius: '50%',
+                    display: 'grid', placeItems: 'center',
+                    bgcolor: 'rgba(255,255,255,0.06)',
+                    color: GOLD_LIGHT,
+                    border: `1px solid ${GOLD}38`,
+                  }}
+                >
+                  {item.icon}
                 </Box>
-                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)', fontWeight: 500 }}>{item}</Typography>
-              </Box>
+                <Typography sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500, fontSize: '0.92rem' }}>
+                  {item.label}
+                </Typography>
+              </Stack>
             ))}
-          </Box>
+          </Stack>
         </Box>
+
+        {/* Footer */}
+        <Typography sx={{ position: 'relative', zIndex: 1, color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>
+          © {new Date().getFullYear()} FilipinoTracks — Philippine PropTech.
+        </Typography>
       </Box>
 
-      {/* Right panel */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', p: { xs: 3, md: 8 }, bgcolor: 'white' }}>
+      {/* ──────────────────── RIGHT: Form panel ──────────────────── */}
+      <Box
+        sx={(theme) => ({
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          p: { xs: 3, sm: 5, md: 6 },
+          bgcolor: theme.palette.background.paper,
+          position: 'relative',
+        })}
+      >
+        {/* Top-right: back link (always visible) */}
+        <MuiLink
+          component={RouterLink}
+          to="/"
+          underline="none"
+          sx={(theme) => ({
+            position: 'absolute', top: 24, right: 32,
+            display: 'inline-flex', alignItems: 'center', gap: 0.5,
+            color: 'text.secondary', fontSize: '0.85rem', fontWeight: 500,
+            '&:hover': { color: theme.palette.mode === 'dark' ? GOLD_LIGHT : GOLD_DARK },
+          })}
+        >
+          <ArrowBackIosNewRoundedIcon sx={{ fontSize: 13 }} />
+          Back to Home
+        </MuiLink>
+
         <Box sx={{ width: '100%', maxWidth: 440 }}>
-          <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/')} sx={{ mb: 4, color: '#5A6A85', fontWeight: 500 }}>
-            Back to Home
-          </Button>
+          {/* Mobile-only brand mark */}
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1.5}
+            sx={{ display: { xs: 'flex', md: 'none' }, mb: 4, justifyContent: 'center' }}
+          >
+            <Box
+              sx={{
+                width: 40, height: 40, borderRadius: 2,
+                display: 'grid', placeItems: 'center',
+                background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+                color: NAVY, fontWeight: 800,
+              }}
+            >
+              FT
+            </Box>
+            <Typography variant="h6" sx={{ fontWeight: 800, color: 'primary.main' }}>
+              FilipinoTracks
+            </Typography>
+          </Stack>
 
           <AnimatePresence mode="wait">
             {/* ── Password login ── */}
             {mode === 'password' && (
-              <motion.div key="password" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
-                <Typography variant="h4" sx={{ color: NAVY, fontWeight: 800, mb: 1 }}>Welcome back</Typography>
-                <Typography variant="body1" sx={{ color: '#5A6A85', mb: 4 }}>Sign in to your FilipinoTracks account</Typography>
+              <MotionDiv
+                key="password"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.28 }}
+              >
+                <Typography variant="h4" sx={{ fontWeight: 800, color: 'text.primary', letterSpacing: '-0.01em' }}>
+                  Welcome back
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1, mb: 4 }}>
+                  Sign in to your FilipinoTracks account to continue.
+                </Typography>
 
-                {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+                {error && (
+                  <Alert severity="error" variant="outlined" sx={{ mb: 2.5, borderRadius: 2 }}>
+                    {error}
+                  </Alert>
+                )}
 
-                <Box component="form" onSubmit={handlePasswordLogin}>
-                  <TextField
-                    label="Email Address" type="email" fullWidth margin="normal" required
-                    value={form.email} onChange={set('email')}
-                    InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: '#94A3B8', fontSize: 20 }} /></InputAdornment> }}
-                  />
-                  <TextField
-                    label="Password" type={showPass ? 'text' : 'password'} fullWidth margin="normal" required
-                    value={form.password} onChange={set('password')}
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#94A3B8', fontSize: 20 }} /></InputAdornment>,
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => setShowPass(!showPass)} size="small">
-                            {showPass ? <VisibilityOffIcon sx={{ fontSize: 18 }} /> : <VisibilityIcon sx={{ fontSize: 18 }} />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  <Button type="submit" fullWidth variant="contained" size="large" disabled={loading}
-                    sx={{ mt: 3, py: 1.8, fontSize: '1rem', fontWeight: 700, background: `linear-gradient(135deg, ${NAVY_MID} 0%, ${NAVY} 100%)` }}>
-                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
-                  </Button>
+                <Box component="form" onSubmit={handlePasswordLogin} noValidate>
+                  <Stack spacing={2.25}>
+                    <TextField
+                      label="Email address"
+                      type="email"
+                      fullWidth
+                      required
+                      autoComplete="email"
+                      autoFocus
+                      value={form.email}
+                      onChange={set('email')}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EmailOutlinedIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <TextField
+                      label="Password"
+                      type={showPass ? 'text' : 'password'}
+                      fullWidth
+                      required
+                      autoComplete="current-password"
+                      value={form.password}
+                      onChange={set('password')}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockOutlinedIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton
+                              onClick={() => setShowPass(!showPass)}
+                              size="small"
+                              edge="end"
+                              aria-label={showPass ? 'Hide password' : 'Show password'}
+                            >
+                              {showPass
+                                ? <VisibilityOffOutlinedIcon sx={{ fontSize: 20 }} />
+                                : <VisibilityOutlinedIcon sx={{ fontSize: 20 }} />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      disabled={loading}
+                      startIcon={!loading && <LoginRoundedIcon />}
+                      sx={{ py: 1.4, fontSize: '0.95rem', fontWeight: 700 }}
+                    >
+                      {loading ? <CircularProgress size={22} sx={{ color: '#fff' }} /> : 'Sign In'}
+                    </Button>
+                  </Stack>
                 </Box>
 
-                <Divider sx={{ my: 3 }}><Typography variant="caption" sx={{ color: '#94A3B8' }}>or</Typography></Divider>
+                <Divider sx={{ my: 3.5 }}>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', px: 1, letterSpacing: '0.15em', fontWeight: 600 }}>
+                    OR
+                  </Typography>
+                </Divider>
 
-                <Button fullWidth variant="outlined" size="large" startIcon={<KeyIcon />}
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  size="large"
+                  startIcon={<KeyRoundedIcon />}
                   onClick={() => switchMode('otp-send')}
-                  sx={{ py: 1.6, fontWeight: 700, borderColor: `${GOLD}60`, color: '#A8882A',
-                    '&:hover': { borderColor: GOLD, bgcolor: `${GOLD}08` } }}>
+                  sx={{
+                    py: 1.3, fontWeight: 700,
+                    borderColor: `${GOLD}66`,
+                    color: GOLD_DARK,
+                    '&:hover': { borderColor: GOLD, bgcolor: `${GOLD}0F` },
+                    '.MuiButton-startIcon svg': { color: GOLD },
+                  }}
+                >
                   Login with Email OTP
                 </Button>
 
-                <Typography variant="body2" sx={{ textAlign: 'center', color: '#5A6A85', mt: 3 }}>
+                <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary', mt: 3.5 }}>
                   Don't have an account?{' '}
-                  <Link to="/register" style={{ color: GOLD, fontWeight: 700, textDecoration: 'none' }}>Create one free</Link>
+                  <MuiLink
+                    component={RouterLink}
+                    to="/register"
+                    underline="none"
+                    sx={{ color: GOLD_DARK, fontWeight: 700, '&:hover': { color: GOLD } }}
+                  >
+                    Create one free
+                  </MuiLink>
                 </Typography>
-              </motion.div>
+              </MotionDiv>
             )}
 
             {/* ── OTP: enter email ── */}
             {mode === 'otp-send' && (
-              <motion.div key="otp-send" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                  <Box sx={{ width: 44, height: 44, borderRadius: 2, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <KeyIcon sx={{ color: NAVY, fontSize: 22 }} />
+              <MotionDiv
+                key="otp-send"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.28 }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
+                  <Box
+                    sx={{
+                      width: 44, height: 44, borderRadius: 2,
+                      display: 'grid', placeItems: 'center',
+                      background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+                      color: NAVY,
+                      boxShadow: `0 8px 24px ${GOLD}44`,
+                    }}
+                  >
+                    <KeyRoundedIcon sx={{ fontSize: 22 }} />
                   </Box>
-                  <Typography variant="h5" sx={{ color: NAVY, fontWeight: 800 }}>Login with OTP</Typography>
-                </Box>
-                <Typography variant="body1" sx={{ color: '#5A6A85', mb: 4 }}>
+                  <Typography variant="h5" sx={{ color: 'text.primary', fontWeight: 800 }}>
+                    Login with OTP
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1, mb: 4 }}>
                   Enter your registered email and we'll send you a 6-digit login code.
                 </Typography>
 
-                {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+                {error && (
+                  <Alert severity="error" variant="outlined" sx={{ mb: 2.5, borderRadius: 2 }}>
+                    {error}
+                  </Alert>
+                )}
 
-                <Box component="form" onSubmit={handleSendOtp}>
-                  <TextField
-                    label="Registered Email Address" type="email" fullWidth required
-                    value={otpEmail} onChange={e => setOtpEmail(e.target.value)}
-                    InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: '#94A3B8', fontSize: 20 }} /></InputAdornment> }}
-                  />
-                  <Button type="submit" fullWidth variant="contained" size="large" disabled={loading}
-                    sx={{ mt: 3, py: 1.8, fontSize: '1rem', fontWeight: 700, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, color: NAVY }}>
-                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Send Login Code'}
-                  </Button>
+                <Box component="form" onSubmit={handleSendOtp} noValidate>
+                  <Stack spacing={2.25}>
+                    <TextField
+                      label="Registered email address"
+                      type="email"
+                      fullWidth
+                      required
+                      autoFocus
+                      value={otpEmail}
+                      onChange={(e) => setOtpEmail(e.target.value)}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <EmailOutlinedIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      disabled={loading}
+                      sx={{
+                        py: 1.4, fontSize: '0.95rem', fontWeight: 700,
+                        background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+                        color: NAVY,
+                        '&:hover': { background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)` },
+                      }}
+                    >
+                      {loading ? <CircularProgress size={22} sx={{ color: NAVY }} /> : 'Send Login Code'}
+                    </Button>
+                  </Stack>
                 </Box>
 
-                <Button fullWidth onClick={() => switchMode('password')} startIcon={<ArrowBackIcon />}
-                  sx={{ mt: 2, color: '#64748B', fontWeight: 600 }}>
+                <Button
+                  fullWidth
+                  onClick={() => switchMode('password')}
+                  startIcon={<ArrowBackIosNewRoundedIcon sx={{ fontSize: 14 }} />}
+                  sx={{ mt: 2, color: 'text.secondary', fontWeight: 600 }}
+                >
                   Back to Password Login
                 </Button>
-              </motion.div>
+              </MotionDiv>
             )}
 
             {/* ── OTP: enter code ── */}
             {mode === 'otp-verify' && (
-              <motion.div key="otp-verify" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                  <Box sx={{ width: 44, height: 44, borderRadius: 2, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <KeyIcon sx={{ color: NAVY, fontSize: 22 }} />
+              <MotionDiv
+                key="otp-verify"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.28 }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
+                  <Box
+                    sx={{
+                      width: 44, height: 44, borderRadius: 2,
+                      display: 'grid', placeItems: 'center',
+                      background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+                      color: NAVY,
+                      boxShadow: `0 8px 24px ${GOLD}44`,
+                    }}
+                  >
+                    <MarkEmailReadOutlinedIcon sx={{ fontSize: 22 }} />
                   </Box>
-                  <Typography variant="h5" sx={{ color: NAVY, fontWeight: 800 }}>Enter Your Code</Typography>
-                </Box>
-                <Typography variant="body1" sx={{ color: '#5A6A85', mb: 1 }}>
-                  We sent a 6-digit code to:
+                  <Typography variant="h5" sx={{ color: 'text.primary', fontWeight: 800 }}>
+                    Enter your code
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+                  We sent a 6-digit code to
                 </Typography>
-                <Typography variant="body1" sx={{ color: NAVY, fontWeight: 700, mb: 4 }}>{otpEmail}</Typography>
+                <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 700, mb: 3.5 }}>
+                  {otpEmail}
+                </Typography>
 
-                {info && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{info}</Alert>}
-                {error && <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>{error}</Alert>}
+                {info && (
+                  <Alert severity="success" variant="outlined" sx={{ mb: 2.5, borderRadius: 2 }}>
+                    {info}
+                  </Alert>
+                )}
+                {error && (
+                  <Alert severity="error" variant="outlined" sx={{ mb: 2.5, borderRadius: 2 }}>
+                    {error}
+                  </Alert>
+                )}
 
-                <Box component="form" onSubmit={handleVerifyOtp}>
+                <Box component="form" onSubmit={handleVerifyOtp} noValidate>
                   <TextField
-                    label="6-Digit Code" fullWidth required
+                    label="6-Digit Code"
+                    fullWidth
+                    required
+                    autoFocus
                     value={otpCode}
-                    onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    inputProps={{ maxLength: 6, style: { fontSize: '2rem', fontWeight: 800, letterSpacing: '0.5em', textAlign: 'center', fontFamily: 'monospace' } }}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    inputProps={{
+                      maxLength: 6,
+                      inputMode: 'numeric',
+                      style: {
+                        fontSize: '1.9rem',
+                        fontWeight: 800,
+                        letterSpacing: '0.55em',
+                        textAlign: 'center',
+                        fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                        paddingLeft: '0.55em',
+                      },
+                    }}
                     sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                   />
-                  <Button type="submit" fullWidth variant="contained" size="large"
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    size="large"
                     disabled={loading || otpCode.length !== 6}
-                    sx={{ mt: 3, py: 1.8, fontSize: '1rem', fontWeight: 700, background: `linear-gradient(135deg, ${GOLD} 0%, #A8882A 100%)`, color: NAVY }}>
-                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Verify & Sign In'}
+                    sx={{
+                      mt: 2.5, py: 1.4, fontSize: '0.95rem', fontWeight: 700,
+                      background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+                      color: NAVY,
+                      '&:hover': { background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)` },
+                      '&.Mui-disabled': { background: 'rgba(0,0,0,0.08)', color: 'rgba(0,0,0,0.35)' },
+                    }}
+                  >
+                    {loading ? <CircularProgress size={22} sx={{ color: NAVY }} /> : 'Verify & Sign In'}
                   </Button>
                 </Box>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-                  <Button onClick={() => switchMode('otp-send')} startIcon={<ArrowBackIcon />}
-                    sx={{ color: '#64748B', fontWeight: 600 }}>
+                <Stack direction="row" justifyContent="space-between" sx={{ mt: 2 }}>
+                  <Button
+                    onClick={() => switchMode('otp-send')}
+                    startIcon={<ArrowBackIosNewRoundedIcon sx={{ fontSize: 14 }} />}
+                    sx={{ color: 'text.secondary', fontWeight: 600 }}
+                  >
                     Change Email
                   </Button>
-                  <Button onClick={handleSendOtp} disabled={loading}
-                    sx={{ color: GOLD, fontWeight: 700 }}>
+                  <Button
+                    onClick={handleSendOtp}
+                    disabled={loading}
+                    sx={{ color: GOLD_DARK, fontWeight: 700, '&:hover': { color: GOLD } }}
+                  >
                     Resend Code
                   </Button>
-                </Box>
-              </motion.div>
+                </Stack>
+              </MotionDiv>
             )}
           </AnimatePresence>
+
+          <Typography
+            variant="caption"
+            sx={{ display: 'block', textAlign: 'center', color: 'text.secondary', mt: 4 }}
+          >
+            Protected by enterprise-grade encryption.
+          </Typography>
         </Box>
       </Box>
     </Box>
