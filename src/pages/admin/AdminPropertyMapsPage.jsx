@@ -28,6 +28,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import PropertyCard from '../../components/property/PropertyCard'
 import PropertyDetailPanel from '../../components/property/PropertyDetailPanel'
 import FilterChips, { applyFilters } from '../../components/property/FilterChips'
+import PolygonMeasurements from '../../components/map/PolygonMeasurements'
 import {
   NAVY, GOLD, GOLD_DARK,
   INFO, SUCCESS, DANGER,
@@ -39,7 +40,7 @@ import {
 } from '../../utils/propertyGeo'
 import api from '../../api/axios'
 
-const LIBRARIES = ['places']
+const LIBRARIES = ['places', 'geometry']
 const SIDEBAR_WIDTH = 380
 
 const POLY_DEFAULT = { fillColor: GOLD, fillOpacity: 0.22, strokeColor: GOLD, strokeOpacity: 0.9, strokeWeight: 2 }
@@ -228,6 +229,7 @@ export default function AdminPropertyMapsPage() {
               onClick={() => handleMapClick(m, useFs)}
             />
           )}
+          {hasPoly && isActive && <PolygonMeasurements paths={pts} />}
           {infoMap?.id === m.id && center && (
             <InfoWindow position={center} onCloseClick={() => { setInfoMap(null); setActiveId(null) }}>
               <Box sx={{ minWidth: 210, p: 0.5 }}>

@@ -24,6 +24,7 @@ import LandingNav from '../components/landing/LandingNav'
 import PropertyCard from '../components/property/PropertyCard'
 import PropertyDetailPanel from '../components/property/PropertyDetailPanel'
 import FilterChips, { applyFilters } from '../components/property/FilterChips'
+import PolygonMeasurements from '../components/map/PolygonMeasurements'
 import {
   NAVY, GOLD, GOLD_DARK,
   INFO, SUCCESS,
@@ -35,7 +36,7 @@ import {
 } from '../utils/propertyGeo'
 import api from '../api/axios'
 
-const LIBRARIES = ['places']
+const LIBRARIES = ['places', 'geometry']
 const NAVBAR_HEIGHT_DESKTOP = 72
 const NAVBAR_HEIGHT_MOBILE  = 64
 const SIDEBAR_WIDTH = 380
@@ -203,6 +204,7 @@ export default function PublicPropertyMapsPage() {
               onClick={() => handleMapClick(m, useFs)}
             />
           )}
+          {hasPoly && isActive && <PolygonMeasurements paths={pts} />}
           {infoMap?.id === m.id && center && (
             <InfoWindow position={center} onCloseClick={() => { setInfoMap(null); setActiveId(null) }}>
               <Box sx={{ minWidth: 200, p: 0.5 }}>

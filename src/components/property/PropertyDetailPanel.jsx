@@ -4,7 +4,10 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import { GOLD, GOLD_DARK, SUCCESS } from '../../theme/theme'
-import { STATUS_META, getPolygonPoints, getCenter } from '../../utils/propertyGeo'
+import {
+  STATUS_META, getPolygonPoints, getCenter,
+  computePolygonArea, formatArea,
+} from '../../utils/propertyGeo'
 
 function DetailRow({ label, value, mono }) {
   if (!value && value !== 0) return null
@@ -56,6 +59,7 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
   const meta   = STATUS_META[property.transaction?.status]
   const pts    = getPolygonPoints(property)
   const hasGeo = !!getCenter(property)
+  const computedAreaSqm = pts.length > 2 ? computePolygonArea(pts) : 0
 
   return (
     <Box sx={{
@@ -148,6 +152,12 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
           <DetailRow label="Tax Declaration"  value={property.tax_declaration_number}                                             mono />
           <DetailRow label="Property Type"    value={property.property_type}                                                      />
           <DetailRow label="Land Area"        value={property.land_area ? `${parseFloat(property.land_area).toLocaleString()} sqm` : null} />
+          {computedAreaSqm > 0 && (
+            <DetailRow
+              label="Mapped Area"
+              value={`${formatArea(computedAreaSqm)} (approx.)`}
+            />
+          )}
         </Box>
 
         {/* Location */}

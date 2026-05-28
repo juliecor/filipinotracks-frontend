@@ -32,6 +32,57 @@ export function getPolygonPoints(m) {
   return coords.map(([lo, la]) => ({ lat: la, lng: lo }))
 }
 
+export function getPolygonCentroid(pts) {
+  if (!pts || pts.length < 3) return null
+  return {
+    lat: pts.reduce((s, p) => s + p.lat, 0) / pts.length,
+    lng: pts.reduce((s, p) => s + p.lng, 0) / pts.length,
+  }
+}
+
+// Requires `geometry` library to be loaded via useJsApiLoader.
+// Returns area in square meters, or 0 if unavailable.
+export function computePolygonArea(pts) {
+  if (!pts || pts.length < 3) return 0
+  if (!window.google?.maps?.geometry) return 0
+  const path = pts.map(p => new window.google.maps.LatLng(p.lat, p.lng))
+  return window.google.maps.geometry.spherical.computeArea(path)
+}
+
+// Returns array of { midpoint, length } — one entry per polygon edge.
+export function computeSideMeasurements(pts) {
+  if (!pts || pts.length < 2) return []
+  if (!window.google?.maps?.geometry) return []
+  const result = []
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i]
+    const b = pts[(i + 1) % pts.length]
+    const latLngA = new window.google.maps.LatLng(a.lat, a.lng)
+    const latLngB = new window.google.maps.LatLng(b.lat, b.lng)
+    result.push({
+      midpoint: { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 },
+      length: window.google.maps.geometry.spherical.computeDistanceBetween(latLngA, latLngB),
+    })
+  }
+  return result
+}
+
+export function formatArea(sqm) {
+  if (!sqm || sqm < 0.01) return '—'
+  const sqmStr = sqm.toLocaleString('en-US', { maximumFractionDigits: 0 })
+  if (sqm >= 10000) {
+    const ha = (sqm / 10000).toLocaleString('en-US', { maximumFractionDigits: 2 })
+    return `${sqmStr} sqm (${ha} ha)`
+  }
+  return `${sqmStr} sqm`
+}
+
+export function formatDistance(m) {
+  if (!m || m < 0.01) return '—'
+  if (m >= 1000) return `${(m / 1000).toLocaleString('en-US', { maximumFractionDigits: 2 })} km`
+  return `${m.toLocaleString('en-US', { maximumFractionDigits: 1 })} m`
+}
+
 export function getCenterAndZoom(properties) {
   const pinned = properties.filter(m => m.latitude && m.longitude)
   const center = pinned.length
