@@ -14,6 +14,7 @@ import {
 import { buildPropertyPdfDoc } from '../../utils/propertyPdfReport'
 import PdfPreviewDialog from './PdfPreviewDialog'
 import SharePropertyDialog from './SharePropertyDialog'
+import PublicPropertyGallery from './PublicPropertyGallery'
 
 const SHAREABLE_STATUSES = ['approved', 'released']
 
@@ -176,6 +177,15 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
               {property.transaction.transaction_code}
             </Typography>
           </Box>
+        )}
+
+        {/* Photo gallery (compact — shows in sidebar) */}
+        {property.photos?.length > 0 && (
+          <PublicPropertyGallery
+            photos={property.photos}
+            ownerName={property.registered_owner}
+            compact
+          />
         )}
 
         {/* Property details */}

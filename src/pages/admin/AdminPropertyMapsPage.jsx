@@ -25,8 +25,10 @@ import CheckIcon from '@mui/icons-material/Check'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import PhotoLibraryOutlinedIcon from '@mui/icons-material/PhotoLibraryOutlined'
 import PropertyCard from '../../components/property/PropertyCard'
 import PropertyDetailPanel from '../../components/property/PropertyDetailPanel'
+import PropertyPhotoManager from '../../components/property/PropertyPhotoManager'
 import FilterChips, { applyFilters } from '../../components/property/FilterChips'
 import PolygonMeasurements from '../../components/map/PolygonMeasurements'
 import { GOOGLE_MAPS_LIBRARIES } from '../../utils/mapsLibraries'
@@ -100,6 +102,9 @@ export default function AdminPropertyMapsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [deleting, setDeleting]         = useState(false)
   const [deleteError, setDeleteError]   = useState('')
+
+  // Photo manager state
+  const [photoTarget, setPhotoTarget] = useState(null)
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -427,6 +432,20 @@ export default function AdminPropertyMapsPage() {
 
   const adminActions = activeProperty && (
     <>
+      <Button
+        variant="outlined"
+        fullWidth
+        startIcon={<PhotoLibraryOutlinedIcon sx={{ fontSize: 17 }} />}
+        onClick={() => setPhotoTarget(activeProperty)}
+        sx={{ fontWeight: 700, py: 1 }}
+      >
+        Manage Photos
+        {activeProperty.photos?.length > 0 && (
+          <Box component="span" sx={{ ml: 0.75, fontSize: '0.72rem', color: GOLD_DARK }}>
+            · {activeProperty.photos.length}
+          </Box>
+        )}
+      </Button>
       {activeProperty.transaction?.id && (
         <Button
           variant="outlined"
@@ -606,6 +625,17 @@ export default function AdminPropertyMapsPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Photo manager */}
+      <PropertyPhotoManager
+        open={!!photoTarget}
+        onClose={() => setPhotoTarget(null)}
+        propertyMap={photoTarget}
+        onChanged={(photos) => {
+          if (!photoTarget) return
+          setMaps(prev => prev.map(m => m.id === photoTarget.id ? { ...m, photos } : m))
+        }}
+      />
 
       {/* Fullscreen dialog */}
       <Dialog fullScreen open={fullscreen} onClose={() => setFullscreen(false)}

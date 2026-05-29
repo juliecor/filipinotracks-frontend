@@ -20,6 +20,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import MapIcon from '@mui/icons-material/Map'
 import HomeIcon from '@mui/icons-material/Home'
 import StarIcon from '@mui/icons-material/Star'
+import ContactSupportRoundedIcon from '@mui/icons-material/ContactSupportRounded'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
 import { useAuth } from '../../context/AuthContext'
@@ -45,6 +46,7 @@ const adminNav = [
   { label: 'Users',           path: '/admin/users',          icon: <PeopleIcon /> },
   { label: 'Transactions',    path: '/admin/transactions',   icon: <ReceiptLongIcon /> },
   { label: 'Property Maps',   path: '/admin/property-maps',  icon: <MapIcon /> },
+  { label: 'Inquiries',       path: '/admin/inquiries',      icon: <ContactSupportRoundedIcon /> },
   { label: 'Announcements',   path: '/admin/announcements',  icon: <CampaignIcon /> },
   { label: 'Testimonials',    path: '/admin/testimonials',   icon: <StarIcon /> },
   { label: 'Settings',        path: '/admin/settings',       icon: <SettingsIcon /> },

@@ -25,6 +25,7 @@ import { GOOGLE_MAPS_LIBRARIES } from '../utils/mapsLibraries'
 import PolygonMeasurements from '../components/map/PolygonMeasurements'
 import { buildPropertyPdfDoc } from '../utils/propertyPdfReport'
 import PdfPreviewDialog from '../components/property/PdfPreviewDialog'
+import PublicPropertyGallery from '../components/property/PublicPropertyGallery'
 
 function DetailRow({ label, value, mono }) {
   if (!value && value !== 0) return null
@@ -282,6 +283,11 @@ export default function PublicPropertyPage() {
             </Box>
           )}
         </Stack>
+
+        {/* ── Photo Gallery ── */}
+        {data.photos?.length > 0 && (
+          <PublicPropertyGallery photos={data.photos} ownerName={property.registered_owner} />
+        )}
 
         {/* ── Map ── */}
         <Box sx={{

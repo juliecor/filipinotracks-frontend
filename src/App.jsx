@@ -36,6 +36,7 @@ const AdminTransactionsPage  = lazy(() => import('./pages/admin/AdminTransaction
 const AdminAnnouncementsPage = lazy(() => import('./pages/admin/AdminAnnouncementsPage'))
 const AdminTestimonialsPage  = lazy(() => import('./pages/admin/AdminTestimonialsPage'))
 const AdminPropertyMapsPage  = lazy(() => import('./pages/admin/AdminPropertyMapsPage'))
+const AdminInquiriesPage     = lazy(() => import('./pages/admin/AdminInquiriesPage'))
 
 // Staff portal
 const StaffDashboard        = lazy(() => import('./pages/staff/StaffDashboard'))
@@ -116,6 +117,7 @@ function App() {
             <Route path="announcements"       element={<AdminAnnouncementsPage />} />
             <Route path="testimonials"        element={<AdminTestimonialsPage />} />
             <Route path="property-maps"       element={<AdminPropertyMapsPage />} />
+            <Route path="inquiries"           element={<AdminInquiriesPage />} />
             <Route path="settings"            element={<SettingsPage />} />
           </Route>
 
