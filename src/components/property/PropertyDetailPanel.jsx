@@ -5,6 +5,7 @@ import LocationOnIcon from '@mui/icons-material/LocationOn'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
+import ShareRoundedIcon from '@mui/icons-material/ShareRounded'
 import { GOLD, GOLD_DARK, SUCCESS } from '../../theme/theme'
 import {
   STATUS_META, getPolygonPoints, getCenter,
@@ -12,6 +13,9 @@ import {
 } from '../../utils/propertyGeo'
 import { buildPropertyPdfDoc } from '../../utils/propertyPdfReport'
 import PdfPreviewDialog from './PdfPreviewDialog'
+import SharePropertyDialog from './SharePropertyDialog'
+
+const SHAREABLE_STATUSES = ['approved', 'released']
 
 function DetailRow({ label, value, mono }) {
   if (!value && value !== 0) return null
@@ -63,12 +67,14 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
   const [exportError, setExportError]     = useState('')
   const [previewDoc, setPreviewDoc]       = useState(null)
   const [previewFilename, setPreviewFilename] = useState('')
+  const [shareOpen, setShareOpen]         = useState(false)
 
   if (!property) return null
   const meta   = STATUS_META[property.transaction?.status]
   const pts    = getPolygonPoints(property)
   const hasGeo = !!getCenter(property)
   const computedAreaSqm = pts.length > 2 ? computePolygonArea(pts) : 0
+  const canShare = SHAREABLE_STATUSES.includes(property.transaction?.status)
 
   const handlePreviewPdf = async () => {
     if (exporting) return
@@ -267,8 +273,29 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
         >
           {exporting ? 'Generating preview…' : 'Preview PDF Report'}
         </Button>
+        <Button
+          variant="contained"
+          fullWidth
+          disabled={!canShare}
+          startIcon={<ShareRoundedIcon sx={{ fontSize: 18 }} />}
+          onClick={() => setShareOpen(true)}
+          sx={{
+            fontWeight: 800, py: 1,
+            background: canShare ? `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)` : undefined,
+            color: canShare ? '#fff' : undefined,
+            '&:hover': canShare ? { background: `linear-gradient(135deg, ${GOLD_DARK} 0%, #7E631F 100%)` } : {},
+          }}
+        >
+          {canShare ? 'Share Property Link' : 'Sharing locked (not approved)'}
+        </Button>
         {actions}
       </Box>
+
+      <SharePropertyDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        property={property}
+      />
 
       <PdfPreviewDialog
         open={!!previewDoc}

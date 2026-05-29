@@ -226,11 +226,13 @@ export async function buildPropertyPdfDoc(property) {
   y += 6
 
   // Transaction code (if any)
+  const isShareable = ['approved', 'released'].includes(property.transaction?.status)
   if (property.transaction?.transaction_code) {
+    const boxH = isShareable ? 14 : 9
     doc.setFillColor('#F6F8FB')
     doc.setDrawColor(BORDER)
     doc.setLineWidth(0.2)
-    doc.roundedRect(margin, y, pageW - margin * 2, 9, 1.5, 1.5, 'FD')
+    doc.roundedRect(margin, y, pageW - margin * 2, boxH, 1.5, 1.5, 'FD')
     doc.setTextColor(TEXT_MUTED)
     doc.setFontSize(6.5)
     doc.setFont('helvetica', 'bold')
@@ -239,7 +241,22 @@ export async function buildPropertyPdfDoc(property) {
     doc.setFontSize(10)
     doc.setFont('courier', 'bold')
     doc.text(property.transaction.transaction_code, margin + 3, y + 7.5)
-    y += 12
+
+    // Live share URL printed on the cover — clickable in any PDF reader,
+    // and recognizable as a URL on printed copies too.
+    if (isShareable && typeof window !== 'undefined') {
+      const shareUrl = `${window.location.origin}/p/${property.transaction.transaction_code}`
+      doc.setTextColor(GOLD_DARK)
+      doc.setFontSize(6.5)
+      doc.setFont('helvetica', 'bold')
+      doc.text('SHAREABLE LINK', pageW - margin - 3, y + 3.5, { align: 'right' })
+      doc.setTextColor(NAVY)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.textWithLink(shareUrl, pageW - margin - 3, y + 7.5, { url: shareUrl, align: 'right' })
+    }
+
+    y += boxH + 3
   } else {
     y += 2
   }

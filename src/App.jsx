@@ -15,6 +15,7 @@ import PortalLayout from './components/portal/PortalLayout'
 
 // ─── Heavy / authenticated routes — code-split ─────────────────────
 const PublicPropertyMapsPage = lazy(() => import('./pages/PublicPropertyMapsPage'))
+const PublicPropertyPage     = lazy(() => import('./pages/PublicPropertyPage'))
 
 // Client portal
 const ClientDashboard       = lazy(() => import('./pages/portal/ClientDashboard'))
@@ -84,6 +85,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login"    element={<GuestRoute><LoginPage /></GuestRoute>} />
           <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
+          <Route path="/p/:code"  element={<PublicPropertyPage />} />
 
           {/* Property registry (any authenticated user) */}
           <Route path="/properties" element={<ProtectedRoute><PublicPropertyMapsPage /></ProtectedRoute>} />
