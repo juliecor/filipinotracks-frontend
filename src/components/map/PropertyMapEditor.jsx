@@ -17,8 +17,9 @@ import MapIcon from '@mui/icons-material/Map'
 import SaveIcon from '@mui/icons-material/Save'
 import { GOLD, NAVY } from '../../theme/theme'
 import api from '../../api/axios'
+import PolygonMeasurements from './PolygonMeasurements'
+import { GOOGLE_MAPS_LIBRARIES as LIBRARIES } from '../../utils/mapsLibraries'
 
-const LIBRARIES = ['places']
 const PH_CENTER = { lat: 14.5995, lng: 120.9842 }
 
 const POLYGON_OPTIONS = {
@@ -325,6 +326,7 @@ export default function PropertyMapEditor({
                   />
                 ))}
                 {points.length >= 3 && <Polygon paths={points} options={POLYGON_OPTIONS} />}
+                {points.length >= 3 && <PolygonMeasurements paths={points} />}
               </GoogleMap>
             </>
           ) : (

@@ -14,8 +14,9 @@ import MyLocationIcon from '@mui/icons-material/MyLocation'
 import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import CloseIcon from '@mui/icons-material/Close'
 import { GOLD, NAVY } from '../../theme/theme'
+import PolygonMeasurements from './PolygonMeasurements'
+import { GOOGLE_MAPS_LIBRARIES as LIBRARIES } from '../../utils/mapsLibraries'
 
-const LIBRARIES = ['places']
 const PH_CENTER = { lat: 14.5995, lng: 120.9842 }
 
 // Higher default zoom so users see parcel-level detail
@@ -147,6 +148,7 @@ export default function PropertyBoundaryDrawer({
         />
       ))}
       {points.length >= 3 && <Polygon paths={points} options={POLYGON_OPTIONS} />}
+      {points.length >= 3 && <PolygonMeasurements paths={points} />}
     </>
   )
 

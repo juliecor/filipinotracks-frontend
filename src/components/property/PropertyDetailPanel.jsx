@@ -1,13 +1,17 @@
-import { Box, Typography, IconButton, Tooltip, Divider, Button } from '@mui/material'
+import { useState } from 'react'
+import { Box, Typography, IconButton, Tooltip, Divider, Button, CircularProgress, Snackbar, Alert } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import VerifiedIcon from '@mui/icons-material/Verified'
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import { GOLD, GOLD_DARK, SUCCESS } from '../../theme/theme'
 import {
   STATUS_META, getPolygonPoints, getCenter,
   computePolygonArea, formatArea,
 } from '../../utils/propertyGeo'
+import { buildPropertyPdfDoc } from '../../utils/propertyPdfReport'
+import PdfPreviewDialog from './PdfPreviewDialog'
 
 function DetailRow({ label, value, mono }) {
   if (!value && value !== 0) return null
@@ -55,11 +59,36 @@ function SectionHeader({ children, icon }) {
  *  - actions: ReactNode               — extra action buttons (View transaction, Delete, etc.)
  */
 export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, actions }) {
+  const [exporting, setExporting]         = useState(false)
+  const [exportError, setExportError]     = useState('')
+  const [previewDoc, setPreviewDoc]       = useState(null)
+  const [previewFilename, setPreviewFilename] = useState('')
+
   if (!property) return null
   const meta   = STATUS_META[property.transaction?.status]
   const pts    = getPolygonPoints(property)
   const hasGeo = !!getCenter(property)
   const computedAreaSqm = pts.length > 2 ? computePolygonArea(pts) : 0
+
+  const handlePreviewPdf = async () => {
+    if (exporting) return
+    setExporting(true)
+    setExportError('')
+    try {
+      const { doc, filename } = await buildPropertyPdfDoc(property)
+      setPreviewDoc(doc)
+      setPreviewFilename(filename)
+    } catch (err) {
+      setExportError(err?.message || 'Failed to generate PDF.')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleClosePreview = () => {
+    setPreviewDoc(null)
+    setPreviewFilename('')
+  }
 
   return (
     <Box sx={{
@@ -209,23 +238,56 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
       </Box>
 
       {/* Action buttons */}
-      {(hasGeo || actions) && (
-        <Box sx={{ p: 1.5, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {hasGeo && (
-            <Button
-              variant="contained"
-              color="secondary"
-              fullWidth
-              startIcon={<MyLocationIcon sx={{ fontSize: 18 }} />}
-              onClick={onCenterOnMap}
-              sx={{ fontWeight: 800, py: 1.1 }}
-            >
-              Center on Map
-            </Button>
-          )}
-          {actions}
-        </Box>
-      )}
+      <Box sx={{ p: 1.5, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {hasGeo && (
+          <Button
+            variant="contained"
+            color="secondary"
+            fullWidth
+            startIcon={<MyLocationIcon sx={{ fontSize: 18 }} />}
+            onClick={onCenterOnMap}
+            sx={{ fontWeight: 800, py: 1.1 }}
+          >
+            Center on Map
+          </Button>
+        )}
+        <Button
+          variant="outlined"
+          fullWidth
+          disabled={exporting}
+          startIcon={exporting
+            ? <CircularProgress size={16} sx={{ color: GOLD_DARK }} />
+            : <PictureAsPdfOutlinedIcon sx={{ fontSize: 18 }} />}
+          onClick={handlePreviewPdf}
+          sx={{
+            fontWeight: 700, py: 1,
+            borderColor: `${GOLD}66`, color: GOLD_DARK,
+            '&:hover': { borderColor: GOLD, bgcolor: `${GOLD}14` },
+          }}
+        >
+          {exporting ? 'Generating preview…' : 'Preview PDF Report'}
+        </Button>
+        {actions}
+      </Box>
+
+      <PdfPreviewDialog
+        open={!!previewDoc}
+        onClose={handleClosePreview}
+        doc={previewDoc}
+        filename={previewFilename}
+        title={property.registered_owner}
+      />
+
+      <Snackbar
+        open={!!exportError}
+        autoHideDuration={5000}
+        onClose={() => setExportError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" variant="filled" onClose={() => setExportError('')}>
+          {exportError}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

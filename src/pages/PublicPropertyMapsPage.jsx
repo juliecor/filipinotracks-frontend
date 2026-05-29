@@ -25,6 +25,7 @@ import PropertyCard from '../components/property/PropertyCard'
 import PropertyDetailPanel from '../components/property/PropertyDetailPanel'
 import FilterChips, { applyFilters } from '../components/property/FilterChips'
 import PolygonMeasurements from '../components/map/PolygonMeasurements'
+import { GOOGLE_MAPS_LIBRARIES } from '../utils/mapsLibraries'
 import {
   NAVY, GOLD, GOLD_DARK,
   INFO, SUCCESS,
@@ -36,7 +37,7 @@ import {
 } from '../utils/propertyGeo'
 import api from '../api/axios'
 
-const LIBRARIES = ['places', 'geometry']
+const LIBRARIES = GOOGLE_MAPS_LIBRARIES
 const NAVBAR_HEIGHT_DESKTOP = 72
 const NAVBAR_HEIGHT_MOBILE  = 64
 const SIDEBAR_WIDTH = 380

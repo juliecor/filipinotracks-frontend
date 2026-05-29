@@ -29,6 +29,7 @@ import PropertyCard from '../../components/property/PropertyCard'
 import PropertyDetailPanel from '../../components/property/PropertyDetailPanel'
 import FilterChips, { applyFilters } from '../../components/property/FilterChips'
 import PolygonMeasurements from '../../components/map/PolygonMeasurements'
+import { GOOGLE_MAPS_LIBRARIES } from '../../utils/mapsLibraries'
 import {
   NAVY, GOLD, GOLD_DARK,
   INFO, SUCCESS, DANGER,
@@ -40,7 +41,7 @@ import {
 } from '../../utils/propertyGeo'
 import api from '../../api/axios'
 
-const LIBRARIES = ['places', 'geometry']
+const LIBRARIES = GOOGLE_MAPS_LIBRARIES
 const SIDEBAR_WIDTH = 380
 
 const POLY_DEFAULT = { fillColor: GOLD, fillOpacity: 0.22, strokeColor: GOLD, strokeOpacity: 0.9, strokeWeight: 2 }

@@ -14,8 +14,7 @@ import CloseIcon from '@mui/icons-material/Close'
 import HomeWorkIcon from '@mui/icons-material/HomeWork'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import { NAVY, GOLD } from '../../theme/theme'
-
-const LIBRARIES = ['places']
+import { GOOGLE_MAPS_LIBRARIES as LIBRARIES } from '../../utils/mapsLibraries'
 
 const POLYGON_OPTIONS = {
   fillColor: GOLD,

@@ -7,8 +7,8 @@ import SatelliteAltIcon from '@mui/icons-material/SatelliteAlt'
 import MapIcon from '@mui/icons-material/Map'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import { NAVY, GOLD } from '../../theme/theme'
+import { GOOGLE_MAPS_LIBRARIES as LIBRARIES } from '../../utils/mapsLibraries'
 
-const LIBRARIES = ['places']
 const PH_CENTER = { lat: 14.5995, lng: 120.9842 }
 
 const POLYGON_OPTIONS = {
