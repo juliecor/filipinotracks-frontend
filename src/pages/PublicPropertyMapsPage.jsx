@@ -105,7 +105,28 @@ export default function PublicPropertyMapsPage() {
   }, [])
 
   const onMapLoad   = useCallback(inst => { mapRef.current   = inst }, [])
-  const onFsMapLoad = useCallback(inst => { fsMapRef.current = inst }, [])
+
+  // Frame a property: fit its polygon bounds, or pan+zoom to its pin.
+  const frameProperty = useCallback((mapInst, m) => {
+    if (!mapInst || !m) return
+    const pts = getPolygonPoints(m)
+    if (pts.length > 2 && window.google?.maps) {
+      const bounds = new window.google.maps.LatLngBounds()
+      pts.forEach(p => bounds.extend(p))
+      mapInst.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 })
+    } else {
+      const center = getCenter(m)
+      if (center) { mapInst.panTo(center); mapInst.setZoom(19) }
+    }
+  }, [])
+
+  // When the fullscreen map mounts, re-frame the active property so the user's
+  // selection stays zoomed in (instead of snapping back to the country view).
+  const onFsMapLoad = useCallback(inst => {
+    fsMapRef.current = inst
+    const active = maps.find(m => m.id === activeId)
+    if (active) setTimeout(() => frameProperty(inst, active), 120)
+  }, [maps, activeId, frameProperty])
 
   const handleThemeSelect = (themeId) => {
     setMapTheme(themeId)
@@ -115,25 +136,15 @@ export default function PublicPropertyMapsPage() {
 
   const flyTo = (m, useFs = false) => {
     setActiveId(m.id)
-    const center = getCenter(m)
-    if (!center) return
     const ref = useFs ? fsMapRef : mapRef
-    if (!ref.current) return
-
-    const pts = getPolygonPoints(m)
-    if (pts.length > 2 && window.google?.maps) {
-      const bounds = new window.google.maps.LatLngBounds()
-      pts.forEach(p => bounds.extend(p))
-      ref.current.fitBounds(bounds, { top: 60, bottom: 60, left: 60, right: 60 })
-    } else {
-      ref.current.panTo(center)
-      ref.current.setZoom(19)
-    }
+    frameProperty(ref.current, m)
     rowRefs.current[m.id]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
   const handleMapClick = (m, useFs = false) => {
     setActiveId(m.id)
+    const ref = useFs ? fsMapRef : mapRef
+    frameProperty(ref.current, m)
     if (!useFs) rowRefs.current[m.id]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
