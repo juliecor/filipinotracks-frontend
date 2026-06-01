@@ -6,7 +6,7 @@ import {
   useTheme, useMediaQuery,
 } from '@mui/material'
 import {
-  GoogleMap, Marker, Polygon, InfoWindow, useJsApiLoader,
+  GoogleMap, Marker, Polygon, useJsApiLoader,
 } from '@react-google-maps/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchIcon from '@mui/icons-material/Search'
@@ -87,7 +87,6 @@ export default function PublicPropertyMapsPage() {
   const [fsSearch, setFsSearch] = useState('')
   const [filters, setFilters]   = useState({ hasPin: false, hasBoundary: false, province: null })
   const [activeId, setActiveId] = useState(null)
-  const [infoMap, setInfoMap]   = useState(null)
   const [mapType, setMapType]   = useState('satellite')
   const [mapTheme, setMapTheme] = useState('default')
   const [themeAnchor, setThemeAnchor] = useState(null)
@@ -116,7 +115,6 @@ export default function PublicPropertyMapsPage() {
 
   const flyTo = (m, useFs = false) => {
     setActiveId(m.id)
-    setInfoMap(m)
     const center = getCenter(m)
     if (!center) return
     const ref = useFs ? fsMapRef : mapRef
@@ -136,18 +134,15 @@ export default function PublicPropertyMapsPage() {
 
   const handleMapClick = (m, useFs = false) => {
     setActiveId(m.id)
-    setInfoMap(m)
     if (!useFs) rowRefs.current[m.id]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
   const handleBack = () => {
     setActiveId(null)
-    setInfoMap(null)
   }
 
   const resetView = (useFs = false) => {
     setActiveId(null)
-    setInfoMap(null)
     const ref = useFs ? fsMapRef : mapRef
     if (ref.current) { ref.current.panTo(mapCenter); ref.current.setZoom(mapZoom) }
   }
@@ -188,7 +183,6 @@ export default function PublicPropertyMapsPage() {
       const hasPin   = !!(m.latitude && m.longitude)
       const hasPoly  = pts.length > 2
       const isActive = activeId === m.id
-      const center   = getCenter(m)
       return (
         <span key={m.id}>
           {hasPin && !hasPoly && (
@@ -206,21 +200,6 @@ export default function PublicPropertyMapsPage() {
             />
           )}
           {hasPoly && isActive && <PolygonMeasurements paths={pts} />}
-          {infoMap?.id === m.id && center && (
-            <InfoWindow position={center} onCloseClick={() => { setInfoMap(null); setActiveId(null) }}>
-              <Box sx={{ minWidth: 200, p: 0.5 }}>
-                <Typography sx={{ fontSize: '0.58rem', fontWeight: 800, color: GOLD, textTransform: 'uppercase', letterSpacing: '0.1em', mb: 0.3 }}>
-                  FilipinoTracks
-                </Typography>
-                <Typography sx={{ fontWeight: 800, color: NAVY, fontSize: '0.88rem', mb: 0.5 }}>
-                  {m.registered_owner || 'Unknown Owner'}
-                </Typography>
-                {m.title_number && <Typography sx={{ fontSize: '0.72rem', color: TEXT_MUTED, mb: 0.2 }}>Title: <strong>{m.title_number}</strong></Typography>}
-                {m.city_municipality && <Typography sx={{ fontSize: '0.72rem', color: TEXT_MUTED, mb: 0.2 }}>{[m.city_municipality, m.province].filter(Boolean).join(', ')}</Typography>}
-                {m.land_area && <Typography sx={{ fontSize: '0.72rem', color: TEXT_MUTED }}>{parseFloat(m.land_area).toLocaleString()} sqm</Typography>}
-              </Box>
-            </InfoWindow>
-          )}
         </span>
       )
     })
