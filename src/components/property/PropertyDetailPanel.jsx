@@ -7,7 +7,10 @@ import VerifiedIcon from '@mui/icons-material/Verified'
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import ShareRoundedIcon from '@mui/icons-material/ShareRounded'
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined'
 import { GOLD, GOLD_DARK, SUCCESS, INFO } from '../../theme/theme'
+
+const LEAD_VIOLET = '#7C3AED'
 import {
   STATUS_META, getPolygonPoints, getCenter,
   computePolygonArea, formatArea,
@@ -172,6 +175,14 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
               <VisibilityOutlinedIcon sx={{ fontSize: 14 }} />
               <Typography sx={{ fontSize: '0.66rem', fontWeight: 800 }}>
                 {(property.views_count ?? 0).toLocaleString()} {(property.views_count ?? 0) === 1 ? 'view' : 'views'}
+              </Typography>
+            </Box>
+          )}
+          {property.inquiries_count != null && (
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1.2, py: 0.4, borderRadius: 1, bgcolor: `${LEAD_VIOLET}14`, color: LEAD_VIOLET }}>
+              <ForumOutlinedIcon sx={{ fontSize: 14 }} />
+              <Typography sx={{ fontSize: '0.66rem', fontWeight: 800 }}>
+                {(property.inquiries_count ?? 0).toLocaleString()} {(property.inquiries_count ?? 0) === 1 ? 'inquiry' : 'inquiries'}
               </Typography>
             </Box>
           )}

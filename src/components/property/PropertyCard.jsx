@@ -1,8 +1,12 @@
 import { Box, Typography, Chip } from '@mui/material'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined'
 import { GOLD, INFO } from '../../theme/theme'
 import { STATUS_META, getPolygonPoints, getCenter } from '../../utils/propertyGeo'
+
+const LEAD_VIOLET = '#7C3AED'
 
 export default function PropertyCard({ m, isActive, onClick }) {
   const status = m.transaction?.status
@@ -81,6 +85,26 @@ export default function PropertyCard({ m, isActive, onClick }) {
           </Box>
         )}
       </Box>
+
+      {/* Engagement stats — views always (when loaded), inquiries only in admin context */}
+      {(m.inquiries_count != null || m.views_count > 0) && (
+        <Box sx={{ display: 'flex', gap: 1.5, mt: 1, pt: 0.9, borderTop: '1px dashed', borderColor: 'divider' }}>
+          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4 }}>
+            <VisibilityOutlinedIcon sx={{ fontSize: 13, color: INFO }} />
+            <Typography sx={{ fontSize: '0.66rem', fontWeight: 700, color: 'text.secondary' }}>
+              {(m.views_count ?? 0).toLocaleString()}
+            </Typography>
+          </Box>
+          {m.inquiries_count != null && (
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4 }}>
+              <ForumOutlinedIcon sx={{ fontSize: 13, color: LEAD_VIOLET }} />
+              <Typography sx={{ fontSize: '0.66rem', fontWeight: 700, color: 'text.secondary' }}>
+                {(m.inquiries_count ?? 0).toLocaleString()}
+              </Typography>
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   )
 }
