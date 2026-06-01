@@ -12,6 +12,7 @@ import StraightenOutlinedIcon from '@mui/icons-material/StraightenOutlined'
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import ArrowBackIosNewRoundedIcon from '@mui/icons-material/ArrowBackIosNewRounded'
 import SendRoundedIcon from '@mui/icons-material/SendRounded'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
 import api from '../api/axios'
 import {
   NAVY, NAVY_DEEP, NAVY_LINE, GOLD, GOLD_LIGHT, GOLD_DARK,
@@ -239,6 +240,14 @@ export default function PublicPropertyPage() {
             size="small"
             sx={{ bgcolor: '#16A34A', color: '#fff', fontWeight: 800, letterSpacing: '0.08em', fontSize: '0.65rem', height: 22 }}
           />
+          {data.views > 0 && (
+            <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: 'text.secondary' }}>
+              <VisibilityOutlinedIcon sx={{ fontSize: 16 }} />
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 600 }}>
+                {data.views.toLocaleString()} {data.views === 1 ? 'view' : 'views'}
+              </Typography>
+            </Stack>
+          )}
         </Stack>
 
         {/* ── Quick stats row ── */}

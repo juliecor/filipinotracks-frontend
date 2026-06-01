@@ -6,7 +6,8 @@ import MyLocationIcon from '@mui/icons-material/MyLocation'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import ShareRoundedIcon from '@mui/icons-material/ShareRounded'
-import { GOLD, GOLD_DARK, SUCCESS } from '../../theme/theme'
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined'
+import { GOLD, GOLD_DARK, SUCCESS, INFO } from '../../theme/theme'
 import {
   STATUS_META, getPolygonPoints, getCenter,
   computePolygonArea, formatArea,
@@ -164,6 +165,14 @@ export default function PropertyDetailPanel({ property, onBack, onCenterOnMap, a
           {pts.length > 2 && (
             <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.4, px: 1.2, py: 0.4, borderRadius: 1, bgcolor: `${GOLD}1F`, color: GOLD_DARK }}>
               <Typography sx={{ fontSize: '0.66rem', fontWeight: 800 }}>🗺 Boundary mapped</Typography>
+            </Box>
+          )}
+          {canShare && (
+            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, px: 1.2, py: 0.4, borderRadius: 1, bgcolor: `${INFO}14`, color: INFO }}>
+              <VisibilityOutlinedIcon sx={{ fontSize: 14 }} />
+              <Typography sx={{ fontSize: '0.66rem', fontWeight: 800 }}>
+                {(property.views_count ?? 0).toLocaleString()} {(property.views_count ?? 0) === 1 ? 'view' : 'views'}
+              </Typography>
             </Box>
           )}
         </Box>
