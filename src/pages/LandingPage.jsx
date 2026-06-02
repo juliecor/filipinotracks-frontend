@@ -9,6 +9,7 @@ import LandingNav from '../components/landing/LandingNav'
 import Hero from '../components/landing/Hero'
 import Services from '../components/landing/Services'
 import Process from '../components/landing/Process'
+import FeaturedProperties from '../components/landing/FeaturedProperties'
 import About from '../components/landing/About'
 import Testimonials from '../components/landing/Testimonials'
 import FAQ from '../components/landing/FAQ'
@@ -124,6 +125,7 @@ export default function LandingPage() {
       <LandingNav />
       <Hero />
       <Services />
+      <FeaturedProperties />
       <Process />
       <About />
       <Testimonials />

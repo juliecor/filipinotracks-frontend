@@ -27,6 +27,7 @@ import PolygonMeasurements from '../components/map/PolygonMeasurements'
 import { buildPropertyPdfDoc } from '../utils/propertyPdfReport'
 import PdfPreviewDialog from '../components/property/PdfPreviewDialog'
 import PublicPropertyGallery from '../components/property/PublicPropertyGallery'
+import AmortizationCalculator from '../components/property/AmortizationCalculator'
 
 function DetailRow({ label, value, mono }) {
   if (!value && value !== 0) return null
@@ -226,9 +227,21 @@ export default function PublicPropertyPage() {
           </Typography>
         </Stack>
 
-        <Typography variant="h3" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.15, fontSize: { xs: '1.7rem', md: '2.6rem' }, letterSpacing: '-0.015em', mb: 1.5 }}>
+        <Typography variant="h3" sx={{ fontWeight: 800, color: 'text.primary', lineHeight: 1.15, fontSize: { xs: '1.7rem', md: '2.6rem' }, letterSpacing: '-0.015em', mb: property.listing_blurb ? 1 : 1.5 }}>
           {property.registered_owner || 'Property record'}
         </Typography>
+
+        {property.listing_blurb && (
+          <Typography sx={{ fontSize: '1rem', color: 'text.secondary', lineHeight: 1.6, mb: 1.5, maxWidth: 720 }}>
+            {property.listing_blurb}
+          </Typography>
+        )}
+
+        {property.price > 0 && (
+          <Typography sx={{ fontWeight: 800, color: GOLD_DARK, fontSize: { xs: '1.6rem', md: '2rem' }, lineHeight: 1.1, mb: 1.5 }}>
+            ₱{Number(property.price).toLocaleString('en-PH')}
+          </Typography>
+        )}
 
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 3, color: 'text.secondary' }}>
           <LocationCityOutlinedIcon sx={{ fontSize: 18, color: GOLD_DARK }} />
@@ -370,8 +383,13 @@ export default function PublicPropertyPage() {
             </Stack>
           </Box>
 
-          {/* Inquiry form */}
+          {/* Right column: payment estimate + inquiry */}
           <Box>
+            {property.price > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <AmortizationCalculator price={property.price} />
+              </Box>
+            )}
             <Typography sx={{ fontSize: '0.72rem', fontWeight: 800, color: GOLD_DARK, letterSpacing: '0.14em', mb: 1.5 }}>
               INTERESTED IN THIS PROPERTY?
             </Typography>

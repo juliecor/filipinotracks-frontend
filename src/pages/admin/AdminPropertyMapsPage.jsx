@@ -26,9 +26,11 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlineOutlined'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import PhotoLibraryOutlinedIcon from '@mui/icons-material/PhotoLibraryOutlined'
+import SellOutlinedIcon from '@mui/icons-material/SellOutlined'
 import PropertyCard from '../../components/property/PropertyCard'
 import PropertyDetailPanel from '../../components/property/PropertyDetailPanel'
 import PropertyPhotoManager from '../../components/property/PropertyPhotoManager'
+import ListingSettingsDialog from '../../components/property/ListingSettingsDialog'
 import FilterChips, { applyFilters } from '../../components/property/FilterChips'
 import PolygonMeasurements from '../../components/map/PolygonMeasurements'
 import { GOOGLE_MAPS_LIBRARIES } from '../../utils/mapsLibraries'
@@ -105,6 +107,8 @@ export default function AdminPropertyMapsPage() {
 
   // Photo manager state
   const [photoTarget, setPhotoTarget] = useState(null)
+  // Listing settings state
+  const [listingTarget, setListingTarget] = useState(null)
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -446,6 +450,20 @@ export default function AdminPropertyMapsPage() {
           </Box>
         )}
       </Button>
+      <Button
+        variant="outlined"
+        fullWidth
+        startIcon={<SellOutlinedIcon sx={{ fontSize: 17 }} />}
+        onClick={() => setListingTarget(activeProperty)}
+        sx={{ fontWeight: 700, py: 1 }}
+      >
+        Listing & Pricing
+        {activeProperty.is_featured && (
+          <Box component="span" sx={{ ml: 0.75, fontSize: '0.72rem', color: GOLD_DARK, fontWeight: 800 }}>
+            · ★ Featured
+          </Box>
+        )}
+      </Button>
       {activeProperty.transaction?.id && (
         <Button
           variant="outlined"
@@ -634,6 +652,17 @@ export default function AdminPropertyMapsPage() {
         onChanged={(photos) => {
           if (!photoTarget) return
           setMaps(prev => prev.map(m => m.id === photoTarget.id ? { ...m, photos } : m))
+        }}
+      />
+
+      {/* Listing & pricing */}
+      <ListingSettingsDialog
+        open={!!listingTarget}
+        onClose={() => setListingTarget(null)}
+        propertyMap={listingTarget}
+        onSaved={(fields) => {
+          if (!listingTarget) return
+          setMaps(prev => prev.map(m => m.id === listingTarget.id ? { ...m, ...fields } : m))
         }}
       />
 
