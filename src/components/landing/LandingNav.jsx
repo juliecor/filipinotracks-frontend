@@ -17,6 +17,7 @@ import { useColorMode } from '../../context/ColorModeContext'
 const navLinks = [
   { label: 'Services', href: '#services' },
   { label: 'Properties', path: '/properties' },
+  { label: 'Measure Land', path: '/measure' },
   { label: 'Process', href: '#process' },
   { label: 'About', href: '#about' },
   { label: 'FAQ', href: '#faq' },

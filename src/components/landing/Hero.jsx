@@ -3,6 +3,7 @@ import { Box, Typography, Button, Container, Chip, Stack } from '@mui/material'
 import { useAuth } from '../../context/AuthContext'
 import { motion } from 'framer-motion'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
+import StraightenOutlinedIcon from '@mui/icons-material/StraightenOutlined'
 import VerifiedIcon from '@mui/icons-material/Verified'
 import SpeedIcon from '@mui/icons-material/Speed'
 import SecurityIcon from '@mui/icons-material/Security'
@@ -90,8 +91,16 @@ export default function Hero() {
                 </Button>
                 <Button
                   variant="outlined" size="large"
-                  onClick={() => document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth' })}
+                  startIcon={<StraightenOutlinedIcon />}
+                  onClick={() => navigate('/measure')}
                   sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)', fontSize: '1rem', py: 1.5, px: 4, '&:hover': { borderColor: GOLD, color: GOLD } }}
+                >
+                  Measure My Land Free
+                </Button>
+                <Button
+                  variant="text" size="large"
+                  onClick={() => document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth' })}
+                  sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '1rem', py: 1.5, px: 2, '&:hover': { color: GOLD, bgcolor: 'rgba(201,168,76,0.08)' } }}
                 >
                   View Services
                 </Button>

@@ -13,7 +13,7 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
 import MyLocationIcon from '@mui/icons-material/MyLocation'
 import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import CloseIcon from '@mui/icons-material/Close'
-import { GOLD, NAVY } from '../../theme/theme'
+import { GOLD, GOLD_LIGHT, GOLD_DARK, NAVY } from '../../theme/theme'
 import PolygonMeasurements from './PolygonMeasurements'
 import { GOOGLE_MAPS_LIBRARIES as LIBRARIES } from '../../utils/mapsLibraries'
 
@@ -46,6 +46,7 @@ export default function PropertyBoundaryDrawer({
   centerLng,
   points = [],
   onChange,
+  mapHeight = 420,
 }) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -201,20 +202,21 @@ export default function PropertyBoundaryDrawer({
           </span>
         </Tooltip>
         {!useFs && (
-          <Tooltip title="Open fullscreen for clearer drawing">
-            <IconButton
-              size="small"
-              onClick={onFullscreen}
-              aria-label="Open fullscreen drawing"
-              sx={{
-                bgcolor: NAVY, color: 'white',
-                '&:hover': { bgcolor: '#060E1A' },
-                ml: 0.5,
-              }}
-            >
-              <FullscreenIcon sx={{ fontSize: 17 }} />
-            </IconButton>
-          </Tooltip>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={onFullscreen}
+            startIcon={<FullscreenIcon sx={{ fontSize: 18 }} />}
+            aria-label="Open fullscreen drawing"
+            sx={{
+              background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`,
+              color: NAVY, fontWeight: 700, ml: 0.5,
+              boxShadow: `0 4px 12px ${GOLD}55`,
+              '&:hover': { background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)` },
+            }}
+          >
+            Fullscreen
+          </Button>
         )}
         {useFs && (
           <Button
@@ -284,7 +286,7 @@ export default function PropertyBoundaryDrawer({
         </Box>
 
         <GoogleMap
-          mapContainerStyle={{ width: '100%', height: 420 }}
+          mapContainerStyle={{ width: '100%', height: mapHeight }}
           center={center}
           zoom={zoom}
           mapTypeId={mapType}
