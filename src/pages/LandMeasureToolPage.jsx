@@ -68,7 +68,7 @@ export default function LandMeasureToolPage() {
           position: 'absolute', inset: 0, opacity: 0.16,
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)',
           backgroundSize: '40px 40px',
-          maskImage: 'radial-gradient(ellipse at 40% 0%, #862424 40%, transparent 80%)',
+          maskImage: 'radial-gradient(ellipse at 40% 0%, #000 40%, transparent 80%)',
         }} />
         <Container maxWidth="lg" sx={{ position: 'relative' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
