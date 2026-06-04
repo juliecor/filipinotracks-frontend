@@ -17,7 +17,12 @@ import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded'
 import ArchiveOutlinedIcon from '@mui/icons-material/ArchiveOutlined'
 import MoreVertRoundedIcon from '@mui/icons-material/MoreVertRounded'
 import HomeWorkOutlinedIcon from '@mui/icons-material/HomeWorkOutlined'
+import ChatRoundedIcon from '@mui/icons-material/ChatRounded'
+import ReplyRoundedIcon from '@mui/icons-material/ReplyRounded'
 import api from '../../api/axios'
+import ReplyInquiryDialog from '../../components/property/ReplyInquiryDialog'
+
+const VIBER_VIOLET = '#7360F2'
 import { NAVY, GOLD, GOLD_DARK, GOLD_LIGHT, TEXT_MUTED } from '../../theme/theme'
 
 const STATUS_META = {
@@ -75,7 +80,7 @@ function StatPill({ icon, label, value, color, active, onClick }) {
   )
 }
 
-function InquiryCard({ item, onStatusChange, onCopied }) {
+function InquiryCard({ item, onStatusChange, onCopied, onReply }) {
   const meta = STATUS_META[item.status] || STATUS_META.new
   const [menuAnchor, setMenuAnchor] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -163,6 +168,43 @@ function InquiryCard({ item, onStatusChange, onCopied }) {
                 </Tooltip>
               )}
             </Stack>
+
+            {/* Quick reply */}
+            {(item.email || item.phone) && (
+              <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                {item.email && (
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={<ReplyRoundedIcon sx={{ fontSize: 16 }} />}
+                    onClick={() => onReply(item)}
+                    sx={{
+                      fontWeight: 700, fontSize: '0.72rem', py: 0.4,
+                      background: `linear-gradient(135deg, ${GOLD_LIGHT} 0%, ${GOLD} 100%)`, color: NAVY,
+                      '&:hover': { background: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)` },
+                    }}
+                  >
+                    Reply
+                  </Button>
+                )}
+                {item.phone && (
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<ChatRoundedIcon sx={{ fontSize: 15 }} />}
+                    href={`viber://chat?number=${item.phone.replace(/[^0-9+]/g, '')}`}
+                    sx={{ fontWeight: 700, fontSize: '0.72rem', py: 0.4, color: VIBER_VIOLET, borderColor: `${VIBER_VIOLET}55`, '&:hover': { borderColor: VIBER_VIOLET, bgcolor: `${VIBER_VIOLET}0F` } }}
+                  >
+                    Viber
+                  </Button>
+                )}
+                {item.replies?.length > 0 && (
+                  <Typography sx={{ fontSize: '0.7rem', color: 'text.disabled', fontWeight: 600 }}>
+                    {item.replies.length} repl{item.replies.length === 1 ? 'y' : 'ies'} sent
+                  </Typography>
+                )}
+              </Stack>
+            )}
 
             {/* Message */}
             <Box
@@ -298,6 +340,7 @@ export default function AdminInquiriesPage() {
   const [tab, setTab]             = useState('new')
   const [search, setSearch]       = useState('')
   const [toast, setToast]         = useState('')
+  const [replyTarget, setReplyTarget] = useState(null)
 
   const fetchData = (statusTab = tab, q = search) => {
     setLoading(true)
@@ -341,6 +384,21 @@ export default function AdminInquiriesPage() {
     } catch (err) {
       setToast('Failed to update status')
     }
+  }
+
+  const handleReplied = (updated) => {
+    setInquiries(prev => {
+      // A reply marks the inquiry 'contacted' — drop it from the current view
+      // if that no longer matches the active tab filter.
+      if (tab !== 'all' && updated.status !== tab) {
+        return prev.filter(x => x.id !== updated.id)
+      }
+      return prev.map(x => x.id === updated.id ? updated : x)
+    })
+    api.get('/admin/inquiries', { params: { status: 'never' } })
+      .then(({ data: d }) => setCounts(d.counts))
+      .catch(() => {})
+    setToast('Reply sent to the client ✓')
   }
 
   return (
@@ -441,6 +499,7 @@ export default function AdminInquiriesPage() {
                   item={item}
                   onStatusChange={handleStatusChange}
                   onCopied={(label) => setToast(label)}
+                  onReply={setReplyTarget}
                 />
               ))}
             </AnimatePresence>
@@ -452,6 +511,13 @@ export default function AdminInquiriesPage() {
           Leads are submitted via the public Share Property page. Marking contacted records who responded and when.
         </Typography>
       </Box>
+
+      <ReplyInquiryDialog
+        open={!!replyTarget}
+        onClose={() => setReplyTarget(null)}
+        inquiry={replyTarget}
+        onReplied={handleReplied}
+      />
 
       <Snackbar
         open={!!toast}
