@@ -8,13 +8,16 @@ import '@fontsource/plus-jakarta-sans/600.css'
 import '@fontsource/plus-jakarta-sans/800.css'
 import App from './App.jsx'
 import { ColorModeProvider } from './context/ColorModeContext.jsx'
+import { ToastProvider } from './context/ToastContext.jsx'
 import './index.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <ColorModeProvider>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </ColorModeProvider>
     </BrowserRouter>
   </StrictMode>,

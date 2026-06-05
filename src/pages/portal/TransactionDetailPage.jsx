@@ -22,10 +22,12 @@ import MapIcon from '@mui/icons-material/Map'
 import api from '../../api/axios'
 import { NAVY, GOLD } from '../../theme/theme'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
 import PropertyMapViewer from '../../components/map/PropertyMapViewer'
 import PropertyMapEditor from '../../components/map/PropertyMapEditor'
 import DocumentPreview from '../../components/DocumentPreview'
 import ActivityTimeline from '../../components/ActivityTimeline'
+import StaffNotes from '../../components/StaffNotes'
 import VisibilityIcon from '@mui/icons-material/Visibility'
 
 const STATUS_META = {
@@ -89,6 +91,7 @@ export default function TransactionDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const toast = useToast()
   const [tx, setTx]             = useState(null)
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
@@ -186,14 +189,22 @@ export default function TransactionDetailPage() {
       setTx(data)
       setStatusDialog(false)
       setRemarks('')
-    } catch { /* silent */ }
+      toast.success(`Status updated to "${data.status}"`)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update status.')
+    }
     finally { setUpdating(false) }
   }
 
   const handleDeleteDocument = async (docId) => {
     if (!window.confirm('Delete this document?')) return
-    await api.delete(`/documents/${docId}`)
-    setTx(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== docId) }))
+    try {
+      await api.delete(`/documents/${docId}`)
+      setTx(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== docId) }))
+      toast.success('Document deleted.')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not delete document.')
+    }
   }
 
   // ─── Admin Accept / Deny on a fresh submission ───────────────────
@@ -205,7 +216,10 @@ export default function TransactionDetailPage() {
         remarks: 'Submission accepted — verification in progress.',
       })
       setTx(data)
-    } catch { /* silent */ }
+      toast.success('Submission accepted — verification in progress.')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not accept this submission.')
+    }
     finally { setDecisionLoading(false) }
   }
 
@@ -219,7 +233,10 @@ export default function TransactionDetailPage() {
       setTx(data)
       setDenyDialog(false)
       setDenyReason('')
-    } catch { /* silent */ }
+      toast.success('Submission denied. Client has been notified.')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Could not deny this submission.')
+    }
     finally { setDecisionLoading(false) }
   }
 
@@ -229,8 +246,9 @@ export default function TransactionDetailPage() {
       await api.delete(`/transactions/${id}`)
       const homePath = isAdmin ? '/admin/transactions' : '/portal/transactions'
       navigate(homePath, { replace: true })
+      toast.success(`Transaction ${tx.transaction_code} deleted.`)
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to delete transaction.')
+      toast.error(err?.response?.data?.message || 'Failed to delete transaction.')
       setDeleting(false)
     }
   }
@@ -639,6 +657,19 @@ export default function TransactionDetailPage() {
                 </Box>
               </CardContent>
             </Card>
+
+            {/* Internal staff notes — visible only to admin + assigned staff */}
+            {canEdit && (
+              <Box sx={{ mb: 3 }}>
+                <StaffNotes
+                  transactionId={tx.id}
+                  initialNotes={tx.staff_notes}
+                  initialUpdatedBy={tx.staff_notes_updated_by}
+                  initialUpdatedAt={tx.staff_notes_updated_at}
+                  canEdit={canEdit}
+                />
+              </Box>
+            )}
 
             {/* Activity timeline — rich, filterable, with icons + relative time */}
             <Card sx={{ boxShadow: '0 2px 12px rgba(10,22,40,0.07)', border: 1, borderColor: 'divider' }}>
