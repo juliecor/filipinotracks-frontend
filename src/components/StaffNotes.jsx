@@ -174,7 +174,7 @@ export default function StaffNotes({
                 sx={{ color: 'text.secondary', fontWeight: 600 }}
               >
                 Cancel
-              </Button>
+              </Button> 
               <Button
                 size="small"
                 variant="contained"
