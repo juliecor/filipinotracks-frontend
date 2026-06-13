@@ -59,17 +59,45 @@ export function haversineMeters(a, b) {
  *
  * @param {{lat, lng}} startPoint
  * @param {Array<{dir1, degrees, minutes, dir2, distance}>} bearings
+ * @param {number} [rotationDeg=0] extra rotation applied to every leg —
+ *        rotates the whole traverse about corner 1 (used by the result-map
+ *        "align with imagery" control)
  * @returns {Array<{lat, lng}>} corner points (length = bearings.length + 1)
  */
-export function plotPolygonFromBearings(startPoint, bearings) {
+export function plotPolygonFromBearings(startPoint, bearings, rotationDeg = 0) {
   const corners = [{ lat: startPoint.lat, lng: startPoint.lng }]
   let current = corners[0]
   for (const b of bearings) {
-    const trueBrng = quadrantToTrueBearing(b.dir1, b.degrees, b.minutes, b.dir2)
+    const trueBrng = quadrantToTrueBearing(b.dir1, b.degrees, b.minutes, b.dir2) + rotationDeg
     current = destinationPoint(current.lat, current.lng, trueBrng, +b.distance || 0)
     corners.push(current)
   }
   return corners
+}
+
+/**
+ * Parse a tie-line description into a single bearing leg.
+ * PH titles write it like "N. 44°31' E., 1393.31 m. from BLLM No. 1, Cad. 545-D".
+ * Seconds, when present, fold into fractional minutes.
+ *
+ * @returns {{dir1, degrees, minutes, dir2, distance}|null}
+ */
+export function parseTieLine(text) {
+  if (!text || typeof text !== 'string') return null
+  const brng = text.match(
+    /([NS])\.?\s*(\d+(?:\.\d+)?)\s*(?:°|deg\.?)?\s*(?:(\d+(?:\.\d+)?)\s*['′])?\s*(?:(\d+(?:\.\d+)?)\s*["″])?\s*,?\s*([EW])/i
+  )
+  if (!brng) return null
+  const dist = text.match(/([\d,]+(?:\.\d+)?)\s*(?:m\b|m\.|meters|metres)/i)
+  if (!dist) return null
+
+  const distance = parseFloat(dist[1].replace(/,/g, ''))
+  const degrees  = parseFloat(brng[2])
+  const minutes  = (brng[3] ? parseFloat(brng[3]) : 0) + (brng[4] ? parseFloat(brng[4]) / 60 : 0)
+  if (!Number.isFinite(distance) || distance <= 0) return null
+  if (!Number.isFinite(degrees) || degrees > 90) return null
+
+  return { dir1: brng[1].toUpperCase(), degrees, minutes, dir2: brng[5].toUpperCase(), distance }
 }
 
 /**
