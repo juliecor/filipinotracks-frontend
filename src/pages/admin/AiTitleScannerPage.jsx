@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { GoogleMap, Polygon, Polyline, Marker, useJsApiLoader } from '@react-google-maps/api'
+import { GoogleMap, Polygon, Polyline, Marker, Autocomplete, OverlayViewF, OverlayView, useJsApiLoader } from '@react-google-maps/api'
 import {
   Box, Paper, Typography, Button, IconButton,
   TextField, Stack, Chip, Divider, Alert, CircularProgress, Tooltip,
   Table, TableBody, TableCell, TableHead, TableRow, MenuItem, Select,
-  Card, CardContent, ToggleButtonGroup, ToggleButton, useTheme, useMediaQuery,
+  Card, CardContent, ToggleButtonGroup, ToggleButton, Collapse,
+  Dialog, DialogTitle, DialogContent, DialogActions, useTheme, useMediaQuery,
 } from '@mui/material'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh'
@@ -27,20 +28,36 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ArrowBackIcon   from '@mui/icons-material/ArrowBack'
+import ContentPasteIcon from '@mui/icons-material/ContentPaste'
+import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined'
+import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap'
+import ScienceIcon from '@mui/icons-material/Science'
+import SearchIcon from '@mui/icons-material/Search'
+import FullscreenIcon from '@mui/icons-material/Fullscreen'
+import LabelOutlinedIcon from '@mui/icons-material/LabelOutlined'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import DownloadIcon from '@mui/icons-material/Download'
+import CropRotateIcon from '@mui/icons-material/CropRotate'
 import { motion, AnimatePresence } from 'framer-motion'
-import { GOLD, GOLD_DARK, NAVY } from '../../theme/theme'
+import { GOLD, GOLD_DARK, GOLD_LIGHT, NAVY } from '../../theme/theme'
 import { GOOGLE_MAPS_LIBRARIES as LIBRARIES } from '../../utils/mapsLibraries'
 import { scanTitleImage } from '../../utils/openaiVision'
 import { plotPolygonFromBearings, closureError, cornersToGeoJsonPolygon, quadrantToTrueBearing, destinationPoint, parseTieLine } from '../../utils/bearingsPlotter'
 import { suggestClosureFixes } from '../../utils/closureAutoFix'
+import { parseBearingsText } from '../../utils/bearingsText'
 import { parseCoordinates, formatCoordsDMS } from '../../utils/coordinates'
 import { polygonAreaSqm } from '../../utils/polygonGis'
 import { useToast } from '../../context/ToastContext'
 import SurveyPdfButton from '../../components/SurveyPdfButton'
 import BearingsSketch from '../../components/BearingsSketch'
+import ImageZoomPanel from '../../components/ImageZoomPanel'
+import ImageEditDialog from '../../components/ImageEditDialog'
+import SuccessBurst from '../../components/SuccessBurst'
 
 const PH_CENTER = { lat: 12.8797, lng: 121.7740 }
 const GOLD_GRADIENT = `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`
+const STORAGE_KEY = 'ai-title-scanner-progress-v1'
 
 const STEP_META = [
   { label: 'Upload Title',    short: 'Upload',  icon: CloudUploadIcon },
@@ -48,6 +65,40 @@ const STEP_META = [
   { label: 'Pin Start Point', short: 'Pin',     icon: PinDropIcon },
   { label: 'Plotted Result',  short: 'Result',  icon: TerrainIcon },
 ]
+
+/** A self-contained demo extraction (a closing parallelogram in Dauis, Bohol)
+ *  so anyone can walk the whole flow without a file or an AI call. */
+const DEMO_EXTRACTION = {
+  title_number: '101-2018001839',
+  lot_number: '4519',
+  block_number: null,
+  survey_plan_number: 'GSS-07-02-000031',
+  registered_owner: 'JUAN A. DELA CRUZ',
+  land_area_sqm: 1350,
+  province: 'Bohol',
+  city_municipality: 'Dauis',
+  barangay: 'Tabalong',
+  full_address: 'Tabalong, Dauis, Bohol',
+  tie_line: "Beginning at a point marked '1' on plan being N. 69°11' E., 2877.81 m. from BLLM No. 7, Dauis Cadastre.",
+  bearings: [
+    { point_from: '1', point_to: '2', dir1: 'N', degrees: 80, minutes: 0, dir2: 'E', distance: 45, conf: 'high' },
+    { point_from: '2', point_to: '3', dir1: 'S', degrees: 10, minutes: 0, dir2: 'E', distance: 30, conf: 'medium' },
+    { point_from: '3', point_to: '4', dir1: 'S', degrees: 80, minutes: 0, dir2: 'W', distance: 45, conf: 'high' },
+    { point_from: '4', point_to: '1', dir1: 'N', degrees: 10, minutes: 0, dir2: 'W', distance: 30, conf: 'high' },
+  ],
+  field_confidence: {
+    title_number: 'high', lot_number: 'high', block_number: 'unknown', survey_plan_number: 'medium',
+    registered_owner: 'high', land_area_sqm: 'high', province: 'high', city_municipality: 'high', barangay: 'medium',
+  },
+  confidence: 'high',
+  notes: 'Demo data — no AI call was made.',
+}
+
+const AREA_UNITS = {
+  sqm:  { label: 'sq m',     factor: 1,        dec: 0 },
+  ha:   { label: 'hectares', factor: 1 / 10000, dec: 4 },
+  sqft: { label: 'sq ft',    factor: 10.76391, dec: 0 },
+}
 
 /* ════════════════════════════════════════════════════════════════════
    Shared visual building blocks
@@ -147,7 +198,6 @@ function ScannerHero({ step, onRestart }) {
         border: '1px solid rgba(201,162,74,0.22)',
       }}
     >
-      {/* Drifting aurora glow */}
       <motion.div
         animate={{ x: ['-12%', '12%', '-12%'], y: ['-8%', '10%', '-8%'], rotate: [0, 12, 0] }}
         transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
@@ -157,7 +207,6 @@ function ScannerHero({ step, onRestart }) {
           filter: 'blur(8px)', pointerEvents: 'none',
         }}
       />
-      {/* Faint survey grid */}
       <Box sx={{
         position: 'absolute', inset: 0, opacity: 0.10, pointerEvents: 'none',
         backgroundImage: `linear-gradient(${GOLD} 1px, transparent 1px), linear-gradient(90deg, ${GOLD} 1px, transparent 1px)`,
@@ -206,7 +255,6 @@ function ScannerHero({ step, onRestart }) {
         )}
       </Box>
 
-      {/* Custom step rail */}
       <Box sx={{ position: 'relative', mt: 3.5 }}>
         <Box sx={{ position: 'absolute', top: 22, left: `${edge}%`, right: `${edge}%`, height: 3, bgcolor: 'rgba(255,255,255,0.14)', borderRadius: 2 }} />
         <Box
@@ -271,22 +319,57 @@ export default function AiTitleScannerPage() {
   const [files, setFiles] = useState([])           // uploaded title images (1 or 2)
   const [scanning, setScanning] = useState(false)
   const [extracted, setExtracted] = useState(null) // structured AI output
+  const [original, setOriginal] = useState(null)   // pristine AI output (for "edited" markers)
   const [startPoint, setStartPoint] = useState(null) // {lat, lng}
   const [coordInput, setCoordInput] = useState('')
   const [coordError, setCoordError] = useState(false)
   const [mapType, setMapType] = useState('satellite')
   const [rotation, setRotation] = useState(0)       // fine-tune rotation (deg) on the result map
+  const [resume, setResume] = useState(null)        // restored-from-localStorage payload offer
 
   const mapRef    = useRef(null)
   const resultRef = useRef(null)
 
+  /* ─── Resume: offer to restore a previous in-progress scan ────────── */
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) {
+        const data = JSON.parse(raw)
+        if (data?.extracted) setResume(data)
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  // Autosave extraction + plotting progress (images can't be serialized, so
+  // a resumed session restarts at the Review step).
+  useEffect(() => {
+    if (!extracted) return
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        extracted, original, startPoint, rotation, step: Math.max(step, 1),
+      }))
+    } catch { /* quota / serialization — non-fatal */ }
+  }, [extracted, original, startPoint, rotation, step])
+
+  const acceptResume = () => {
+    setExtracted(resume.extracted)
+    setOriginal(resume.original || resume.extracted)
+    setStartPoint(resume.startPoint || null)
+    setRotation(resume.rotation || 0)
+    setStep(resume.startPoint ? (resume.step || 1) : 1)
+    setResume(null)
+  }
+  const dismissResume = () => {
+    try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
+    setResume(null)
+  }
+
   /* ─── Step 1: Upload + AI scan ────────────────────────────────────── */
   const onDrop = useCallback((accepted) => {
     if (!accepted?.length) return
-    // Cap at 2 files (front + back)
-    const next = [...files, ...accepted].slice(0, 2)
-    setFiles(next)
-  }, [files])
+    setFiles(prev => [...prev, ...accepted].slice(0, 2))   // cap at 2 (front + back)
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -295,12 +378,30 @@ export default function AiTitleScannerPage() {
     multiple: true,
   })
 
+  // Paste an image straight from the clipboard while on the upload step.
+  useEffect(() => {
+    if (step !== 0) return
+    const onPaste = (e) => {
+      const imgs = []
+      for (const item of e.clipboardData?.items || []) {
+        if (item.type.startsWith('image/')) {
+          const f = item.getAsFile()
+          if (f) imgs.push(f)
+        }
+      }
+      if (imgs.length) { onDrop(imgs); toast.success('Image pasted from clipboard.') }
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  }, [step, onDrop, toast])
+
   const handleScan = async () => {
     if (!files.length) return
     setScanning(true)
     try {
       const result = await scanTitleImage(files)
       setExtracted(result)
+      setOriginal(result)
       setStep(1)
       const found = (result.bearings || []).length
       toast.success(`AI extracted ${found} bearing${found === 1 ? '' : 's'} (${result.confidence} confidence).`)
@@ -311,14 +412,21 @@ export default function AiTitleScannerPage() {
     }
   }
 
-  const removeFile = (idx) => setFiles(files.filter((_, i) => i !== idx))
+  const loadDemo = () => {
+    setExtracted(DEMO_EXTRACTION)
+    setOriginal(DEMO_EXTRACTION)
+    setStep(1)
+    toast.success('Loaded a demo title — no AI call used.')
+  }
+
+  const removeFile = (idx) => setFiles(prev => prev.filter((_, i) => i !== idx))
+  const replaceFile = (idx, newFile) => setFiles(prev => prev.map((f, i) => (i === idx ? newFile : f)))
 
   /* ─── Step 2: Editable extracted fields ──────────────────────────── */
   const updateField = (key, value) => setExtracted(prev => ({ ...prev, [key]: value }))
-  const updateBearing = (idx, key, value) => setExtracted(prev => {
-    const next = { ...prev, bearings: prev.bearings.map((b, i) => i === idx ? { ...b, [key]: value } : b) }
-    return next
-  })
+  const updateBearing = (idx, key, value) => setExtracted(prev => ({
+    ...prev, bearings: prev.bearings.map((b, i) => i === idx ? { ...b, [key]: value } : b),
+  }))
   const addBearing = () => setExtracted(prev => {
     const nextNo = String((prev.bearings?.length || 0) + 1)
     const fromN = String(prev.bearings?.length || 0)
@@ -331,10 +439,9 @@ export default function AiTitleScannerPage() {
     }
   })
   const removeBearing = (idx) => setExtracted(prev => ({
-    ...prev,
-    bearings: prev.bearings.filter((_, i) => i !== idx),
+    ...prev, bearings: prev.bearings.filter((_, i) => i !== idx),
   }))
-  /** Bulk-replace bearings — used by the closure auto-fix suggestions. */
+  /** Bulk-replace bearings — used by closure auto-fix + paste-text parser. */
   const applyBearings = (bearings) => setExtracted(prev => ({ ...prev, bearings }))
 
   /* ─── Step 3: Start point selection ──────────────────────────────── */
@@ -376,7 +483,6 @@ export default function AiTitleScannerPage() {
     return { corners, closure, feature, area }
   }, [startPoint, extracted, rotation])
 
-  // Auto-fit the satellite view to the plotted polygon on entering step 4
   useEffect(() => {
     if (step !== 3 || !plotted || !resultRef.current || !window.google?.maps) return
     const bounds = new window.google.maps.LatLngBounds()
@@ -384,12 +490,6 @@ export default function AiTitleScannerPage() {
     setTimeout(() => resultRef.current.fitBounds(bounds, 80), 120)
   }, [step, plotted])
 
-  /**
-   * Build a synthetic PropertyMap record from the extraction + plotted polygon
-   * so the shared SurveyPdfButton can render the same branded preview dialog
-   * we use from the GIS map. Includes `boundaries` so the button skips its
-   * normal /transactions/.../property-map fetch.
-   */
   const syntheticMap = useMemo(() => {
     if (!extracted || !plotted) return null
     return {
@@ -415,15 +515,16 @@ export default function AiTitleScannerPage() {
     setStep(0)
     setFiles([])
     setExtracted(null)
+    setOriginal(null)
     setStartPoint(null)
     setCoordInput('')
     setRotation(0)
+    try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
   }
 
   /* ─── UI ──────────────────────────────────────────────────────────── */
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: 'background.default', minHeight: 'calc(100vh - 56px)', position: 'relative' }}>
-      {/* Ambient page glow */}
       <Box sx={{
         position: 'absolute', top: 0, right: 0, width: 480, height: 480, pointerEvents: 'none', zIndex: 0,
         background: `radial-gradient(circle at 70% 20%, ${GOLD}14 0%, transparent 60%)`,
@@ -431,6 +532,20 @@ export default function AiTitleScannerPage() {
 
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <ScannerHero step={step} onRestart={handleRestart} />
+
+        {resume && step === 0 && (
+          <Alert
+            severity="info" icon={<RestartAltIcon />} sx={{ mb: 2.5, borderRadius: 3 }}
+            action={
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button size="small" onClick={dismissResume} sx={{ fontWeight: 700, color: 'text.secondary' }}>Dismiss</Button>
+                <Button size="small" variant="contained" color="secondary" onClick={acceptResume} sx={{ fontWeight: 800 }}>Resume</Button>
+              </Box>
+            }
+          >
+            You have an unfinished scan{resume.extracted?.title_number ? ` (${resume.extracted.title_number})` : ''}. Resume where you left off?
+          </Alert>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -447,7 +562,9 @@ export default function AiTitleScannerPage() {
                 getInputProps={getInputProps}
                 isDragActive={isDragActive}
                 onRemove={removeFile}
+                onReplace={replaceFile}
                 onScan={handleScan}
+                onDemo={loadDemo}
                 scanning={scanning}
               />
             )}
@@ -455,6 +572,8 @@ export default function AiTitleScannerPage() {
             {step === 1 && extracted && (
               <StepReview
                 extracted={extracted}
+                original={original}
+                files={files}
                 onUpdate={updateField}
                 onUpdateBearing={updateBearing}
                 onAddBearing={addBearing}
@@ -511,8 +630,6 @@ export default function AiTitleScannerPage() {
 /* ════════════════════════════════════════════════════════════════════
    STEP 1 — Upload  (+ the headline document-scanner animation)
    ════════════════════════════════════════════════════════════════════ */
-
-/** Viewfinder corner bracket — four of these frame the document while scanning. */
 function CornerBracket({ pos }) {
   const base = { position: 'absolute', width: 26, height: 26, borderColor: GOLD, pointerEvents: 'none' }
   const map = {
@@ -531,16 +648,13 @@ function CornerBracket({ pos }) {
   )
 }
 
-/** The scanning overlay placed over each uploaded title image. */
 function ScanOverlay() {
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
     >
-      {/* Darken for contrast */}
       <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(5,8,15,0.55), rgba(5,8,15,0.35))' }} />
-      {/* Moving survey grid */}
       <Box
         component={motion.div}
         animate={{ backgroundPositionY: ['0px', '22px'] }}
@@ -551,10 +665,7 @@ function ScanOverlay() {
           backgroundSize: '22px 22px',
         }}
       />
-      {/* Viewfinder brackets */}
       <CornerBracket pos="tl" /><CornerBracket pos="tr" /><CornerBracket pos="bl" /><CornerBracket pos="br" />
-
-      {/* Sweeping laser band (bright core + soft glow) */}
       <motion.div
         animate={{ top: ['-12%', '100%'] }}
         transition={{ duration: 2.2, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
@@ -567,8 +678,6 @@ function ScanOverlay() {
           boxShadow: `0 0 18px 5px ${GOLD}99`,
         }} />
       </motion.div>
-
-      {/* Live scanning tag */}
       <Box sx={{ position: 'absolute', bottom: 10, left: 12, display: 'flex', alignItems: 'center', gap: 0.8, px: 1, py: 0.4, borderRadius: 1.5, bgcolor: 'rgba(5,8,15,0.6)', border: `1px solid ${GOLD}55` }}>
         <Box component={motion.div} animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 1, repeat: Infinity }} sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: GOLD }} />
         <Typography sx={{ fontSize: '0.62rem', fontWeight: 800, color: GOLD, letterSpacing: '0.14em' }}>SCANNING</Typography>
@@ -577,7 +686,6 @@ function ScanOverlay() {
   )
 }
 
-/** Immersive status strip shown under the images while the AI reads. */
 const SCAN_MESSAGES = [
   'Reading the title number…',
   'Identifying the registered owner…',
@@ -622,7 +730,6 @@ function ScanningBanner() {
           </AnimatePresence>
         </Box>
       </Box>
-      {/* Indeterminate shimmer track */}
       <Box sx={{ mt: 1.5, height: 4, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
         <Box
           component={motion.div}
@@ -635,16 +742,33 @@ function ScanningBanner() {
   )
 }
 
-function StepUpload({ files, getRootProps, getInputProps, isDragActive, onRemove, onScan, scanning }) {
+function StepUpload({ files, getRootProps, getInputProps, isDragActive, onRemove, onReplace, onScan, onDemo, scanning }) {
+  const [editIdx, setEditIdx] = useState(-1)        // image being edited
+  const [lightbox, setLightbox] = useState(-1)      // image shown full-screen
+  // Create object URLs in an effect (not useMemo) so StrictMode's
+  // mount→cleanup→remount recreates them instead of leaving revoked URLs.
+  const [urls, setUrls] = useState([])
+  useEffect(() => {
+    const next = files.map(f => URL.createObjectURL(f))
+    setUrls(next)
+    return () => next.forEach(u => URL.revokeObjectURL(u))
+  }, [files])
+
   return (
     <GlassPanel sx={{ p: { xs: 2.5, md: 3.5 } }}>
       <PanelHeader
         kicker="STEP 1"
         title="Upload the Land Title"
         icon={<CloudUploadIcon sx={{ color: NAVY, fontSize: 22 }} />}
+        action={
+          <Button onClick={onDemo} startIcon={<ScienceIcon />} variant="outlined" size="small" sx={{ fontWeight: 700, borderRadius: 2 }}>
+            Try a demo
+          </Button>
+        }
       />
       <Typography sx={{ fontSize: '0.86rem', color: 'text.secondary', mb: 2.5 }}>
-        A clear photo or scan of the title page works best. Upload both <strong>front and back</strong> for higher accuracy.
+        A clear photo or scan of the title page works best. Upload both <strong>front and back</strong> for higher accuracy —
+        or <strong>paste</strong> a screenshot with Ctrl/Cmd + V.
       </Typography>
 
       <Box
@@ -659,7 +783,7 @@ function StepUpload({ files, getRootProps, getInputProps, isDragActive, onRemove
           '&:hover': { borderColor: GOLD, bgcolor: `${GOLD}0a` },
         }}
       >
-        <input {...getInputProps()} />
+        <input {...getInputProps()} capture="environment" />
         <Box
           component={motion.div}
           animate={{ y: isDragActive ? [-4, 4, -4] : [0, -6, 0] }}
@@ -692,22 +816,26 @@ function StepUpload({ files, getRootProps, getInputProps, isDragActive, onRemove
               sx={{ position: 'relative', overflow: 'hidden', borderRadius: 3, border: '1px solid', borderColor: scanning ? `${GOLD}66` : 'divider' }}
             >
               <Box sx={{ position: 'relative', height: 240, bgcolor: '#05080F' }}>
-                <img
-                  src={URL.createObjectURL(f)}
-                  alt={f.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                />
+                {urls[i] && <img src={urls[i]} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
                 <AnimatePresence>{scanning && <ScanOverlay key="scan" />}</AnimatePresence>
                 {!scanning && (
-                  <Tooltip title="Remove">
-                    <IconButton
-                      size="small"
-                      onClick={() => onRemove(i)}
-                      sx={{ position: 'absolute', top: 8, right: 8, bgcolor: 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: 'white' } }}
-                    >
-                      <DeleteOutlineIcon sx={{ fontSize: 18, color: '#DC2626' }} />
-                    </IconButton>
-                  </Tooltip>
+                  <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
+                    <Tooltip title="Zoom / view">
+                      <IconButton size="small" onClick={() => setLightbox(i)} sx={{ bgcolor: 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: 'white' } }}>
+                        <ZoomOutMapIcon sx={{ fontSize: 17, color: NAVY }} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Rotate / crop">
+                      <IconButton size="small" onClick={() => setEditIdx(i)} sx={{ bgcolor: 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: 'white' } }}>
+                        <CropRotateIcon sx={{ fontSize: 17, color: NAVY }} />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Remove">
+                      <IconButton size="small" onClick={() => onRemove(i)} sx={{ bgcolor: 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: 'white' } }}>
+                        <DeleteOutlineIcon sx={{ fontSize: 17, color: '#DC2626' }} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
                 )}
               </Box>
               <Box sx={{ px: 1.5, py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -744,6 +872,17 @@ function StepUpload({ files, getRootProps, getInputProps, isDragActive, onRemove
           You'll get a chance to review and edit before plotting.
         </Alert>
       )}
+
+      {/* Editor + lightbox dialogs */}
+      <ImageEditDialog
+        open={editIdx >= 0}
+        file={editIdx >= 0 ? files[editIdx] : null}
+        onApply={(nf) => onReplace(editIdx, nf)}
+        onClose={() => setEditIdx(-1)}
+      />
+      <Dialog open={lightbox >= 0} onClose={() => setLightbox(-1)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 3, bgcolor: '#05080F' } }}>
+        {lightbox >= 0 && urls[lightbox] && <ImageZoomPanel src={urls[lightbox]} alt="title" height={Math.round(window.innerHeight * 0.8)} rounded={3} />}
+      </Dialog>
     </GlassPanel>
   )
 }
@@ -751,15 +890,13 @@ function StepUpload({ files, getRootProps, getInputProps, isDragActive, onRemove
 /* ════════════════════════════════════════════════════════════════════
    STEP 2 — Review & edit
    ════════════════════════════════════════════════════════════════════ */
-function StepReview({ extracted, onUpdate, onUpdateBearing, onAddBearing, onRemoveBearing, onApplyBearings, onBack, onNext }) {
+function StepReview({ extracted, original, files, onUpdate, onUpdateBearing, onAddBearing, onRemoveBearing, onApplyBearings, onBack, onNext }) {
   const confColor = extracted.confidence === 'high' ? '#16A34A' : extracted.confidence === 'medium' ? '#D97706' : '#DC2626'
   const canContinue = (extracted.bearings || []).length >= 3
 
-  // Live closure + single-edit fix suggestions, recomputed as rows are edited
   const fix = useMemo(() => suggestClosureFixes(extracted.bearings || []), [extracted.bearings])
   const closureColor = fix.before < 1.5 ? '#16A34A' : fix.before < 5 ? '#D97706' : '#DC2626'
 
-  // Per-field confidence tinting — amber/red outline on fields the AI was unsure about
   const fieldConf = extracted.field_confidence || {}
   const CONF_TINT = {
     medium: { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#D97706', borderWidth: 2 } },
@@ -770,89 +907,126 @@ function StepReview({ extracted, onUpdate, onUpdateBearing, onAddBearing, onRemo
   const rowTint = (conf) =>
     conf === 'low' ? 'rgba(220,38,38,0.08)' : conf === 'medium' ? 'rgba(217,119,6,0.08)' : undefined
 
-  return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1fr 1.2fr' }, gap: 2.5 }}>
-      {/* Property fields */}
-      <GlassPanel sx={{ p: { xs: 2.5, md: 3 } }}>
-        <PanelHeader
-          kicker="STEP 2 · EXTRACTED"
-          title="Property Information"
-          icon={<FactCheckIcon sx={{ color: NAVY, fontSize: 22 }} />}
-          action={
-            <Chip
-              icon={<AutoAwesomeIcon sx={{ fontSize: 14, color: 'white !important' }} />}
-              label={`${extracted.confidence?.toUpperCase()} confidence`}
-              size="small"
-              sx={{ bgcolor: confColor, color: 'white', fontWeight: 700, fontSize: '0.65rem' }}
-            />
-          }
-        />
-        <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary', mb: hasUnsureFields ? 0.5 : 2 }}>
-          Review what the AI read. Edit any field if it misread something.
+  // "Edited from AI" dot — shown when a field differs from the original scan.
+  const editedAdornment = (key) => {
+    if (!original) return undefined
+    if ((extracted[key] ?? '') === (original[key] ?? '')) return undefined
+    return {
+      endAdornment: (
+        <Tooltip title={`AI read: ${original[key] ?? '—'}`}>
+          <Box sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: GOLD, flexShrink: 0, ml: 0.5 }} />
+        </Tooltip>
+      ),
+    }
+  }
+
+  // Source-image reference. Object URLs are created inside an effect (not
+  // useMemo) so React StrictMode's mount→cleanup→remount can't leave the <img>
+  // pointing at a revoked URL — the remount recreates fresh URLs.
+  const [urls, setUrls] = useState([])
+  useEffect(() => {
+    const next = (files || []).map(f => URL.createObjectURL(f))
+    setUrls(next)
+    return () => next.forEach(u => URL.revokeObjectURL(u))
+  }, [files])
+  const hasImage = (files?.length || 0) > 0
+  const [imgIdx, setImgIdx] = useState(0)
+  const [lightbox, setLightbox] = useState(false)
+
+  // Paste-a-technical-description parser
+  const [pasteOpen, setPasteOpen] = useState(false)
+  const [pasteText, setPasteText] = useState('')
+  const parsed = useMemo(() => parseBearingsText(pasteText), [pasteText])
+
+  const fieldsCard = (
+    <GlassPanel sx={{ p: { xs: 2.5, md: 3 } }}>
+      <PanelHeader
+        kicker="STEP 2 · EXTRACTED"
+        title="Property Information"
+        icon={<FactCheckIcon sx={{ color: NAVY, fontSize: 22 }} />}
+        action={
+          <Chip
+            icon={<AutoAwesomeIcon sx={{ fontSize: 14, color: 'white !important' }} />}
+            label={`${extracted.confidence?.toUpperCase()} confidence`}
+            size="small"
+            sx={{ bgcolor: confColor, color: 'white', fontWeight: 700, fontSize: '0.65rem' }}
+          />
+        }
+      />
+      <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary', mb: hasUnsureFields ? 0.5 : 2 }}>
+        Review what the AI read. Edit any field if it misread something — a gold dot marks fields you've changed.
+      </Typography>
+      {hasUnsureFields && (
+        <Typography sx={{ fontSize: '0.72rem', color: '#D97706', fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 0.6 }}>
+          <WarningAmberIcon sx={{ fontSize: 15 }} />
+          Fields outlined in amber or red are ones the AI was less sure about — double-check those first.
         </Typography>
-        {hasUnsureFields && (
-          <Typography sx={{ fontSize: '0.72rem', color: '#D97706', fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 0.6 }}>
-            <WarningAmberIcon sx={{ fontSize: 15 }} />
-            Fields outlined in amber or red are ones the AI was less sure about — double-check those first.
-          </Typography>
+      )}
+
+      <Stack spacing={1.5}>
+        <TextField size="small" label="Title Number" value={extracted.title_number || ''} onChange={(e) => onUpdate('title_number', e.target.value)} fullWidth sx={confSx('title_number')} InputProps={editedAdornment('title_number')} />
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <TextField size="small" label="Lot Number" value={extracted.lot_number || ''} onChange={(e) => onUpdate('lot_number', e.target.value)} fullWidth sx={confSx('lot_number')} InputProps={editedAdornment('lot_number')} />
+          <TextField size="small" label="Block" value={extracted.block_number || ''} onChange={(e) => onUpdate('block_number', e.target.value)} sx={{ width: 110, ...confSx('block_number') }} InputProps={editedAdornment('block_number')} />
+        </Box>
+        <TextField size="small" label="Survey Plan Number" value={extracted.survey_plan_number || ''} onChange={(e) => onUpdate('survey_plan_number', e.target.value)} fullWidth sx={confSx('survey_plan_number')} InputProps={editedAdornment('survey_plan_number')} />
+        <TextField size="small" label="Registered Owner" value={extracted.registered_owner || ''} onChange={(e) => onUpdate('registered_owner', e.target.value)} fullWidth sx={confSx('registered_owner')} InputProps={editedAdornment('registered_owner')} />
+        <TextField size="small" label="Land Area (sqm)" type="number" value={extracted.land_area_sqm ?? ''}
+                   onChange={(e) => onUpdate('land_area_sqm', e.target.value === '' ? null : Number(e.target.value))} fullWidth sx={confSx('land_area_sqm')} />
+        <Divider sx={{ my: 0.5 }} />
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <TextField size="small" label="Barangay" value={extracted.barangay || ''} onChange={(e) => onUpdate('barangay', e.target.value)} fullWidth sx={confSx('barangay')} InputProps={editedAdornment('barangay')} />
+          <TextField size="small" label="City/Municipality" value={extracted.city_municipality || ''} onChange={(e) => onUpdate('city_municipality', e.target.value)} fullWidth sx={confSx('city_municipality')} InputProps={editedAdornment('city_municipality')} />
+        </Box>
+        <TextField size="small" label="Province" value={extracted.province || ''} onChange={(e) => onUpdate('province', e.target.value)} fullWidth sx={confSx('province')} InputProps={editedAdornment('province')} />
+        {extracted.tie_line && (
+          <TextField size="small" label="Tie Line" value={extracted.tie_line} onChange={(e) => onUpdate('tie_line', e.target.value)} fullWidth multiline minRows={2} />
         )}
+      </Stack>
+    </GlassPanel>
+  )
 
-        <Stack spacing={1.5}>
-          <TextField size="small" label="Title Number"        value={extracted.title_number || ''}       onChange={(e) => onUpdate('title_number', e.target.value)} fullWidth sx={confSx('title_number')} />
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField size="small" label="Lot Number"        value={extracted.lot_number || ''}         onChange={(e) => onUpdate('lot_number', e.target.value)} fullWidth sx={confSx('lot_number')} />
-            <TextField size="small" label="Block"             value={extracted.block_number || ''}       onChange={(e) => onUpdate('block_number', e.target.value)} sx={{ width: 100, ...confSx('block_number') }} />
-          </Box>
-          <TextField size="small" label="Survey Plan Number"  value={extracted.survey_plan_number || ''} onChange={(e) => onUpdate('survey_plan_number', e.target.value)} fullWidth sx={confSx('survey_plan_number')} />
-          <TextField size="small" label="Registered Owner"    value={extracted.registered_owner || ''}   onChange={(e) => onUpdate('registered_owner', e.target.value)} fullWidth sx={confSx('registered_owner')} />
-          <TextField size="small" label="Land Area (sqm)"     type="number" value={extracted.land_area_sqm ?? ''}
-                     onChange={(e) => onUpdate('land_area_sqm', e.target.value === '' ? null : Number(e.target.value))} fullWidth sx={confSx('land_area_sqm')} />
-          <Divider sx={{ my: 0.5 }} />
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField size="small" label="Barangay"          value={extracted.barangay || ''}          onChange={(e) => onUpdate('barangay', e.target.value)} fullWidth sx={confSx('barangay')} />
-            <TextField size="small" label="City/Municipality" value={extracted.city_municipality || ''} onChange={(e) => onUpdate('city_municipality', e.target.value)} fullWidth sx={confSx('city_municipality')} />
-          </Box>
-          <TextField size="small" label="Province"            value={extracted.province || ''}          onChange={(e) => onUpdate('province', e.target.value)} fullWidth sx={confSx('province')} />
-          {extracted.tie_line && (
-            <TextField size="small" label="Tie Line" value={extracted.tie_line} onChange={(e) => onUpdate('tie_line', e.target.value)} fullWidth multiline minRows={2} />
-          )}
-        </Stack>
-      </GlassPanel>
-
-      {/* Bearings table */}
-      <GlassPanel sx={{ p: { xs: 2.5, md: 3 } }} delay={0.08}>
-        <PanelHeader
-          kicker="TECHNICAL DESCRIPTION"
-          title={`${extracted.bearings?.length || 0} Bearings`}
-          icon={<TerrainIcon sx={{ color: NAVY, fontSize: 22 }} />}
-          action={
+  const bearingsCard = (
+    <GlassPanel sx={{ p: { xs: 2.5, md: 3 } }} delay={0.08}>
+      <PanelHeader
+        kicker="TECHNICAL DESCRIPTION"
+        title={`${extracted.bearings?.length || 0} Bearings`}
+        icon={<TerrainIcon sx={{ color: NAVY, fontSize: 22 }} />}
+        action={
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            <Button size="small" startIcon={<ContentPasteIcon sx={{ fontSize: 15 }} />} onClick={() => setPasteOpen(true)} sx={{ fontWeight: 700 }}>
+              Paste text
+            </Button>
             <Button size="small" startIcon={<AddIcon sx={{ fontSize: 16 }} />} onClick={onAddBearing} sx={{ fontWeight: 700 }}>
               Add row
             </Button>
-          }
-        />
+          </Box>
+        }
+      />
 
-        {(!extracted.bearings || extracted.bearings.length < 3) && (
-          <Alert severity="warning" sx={{ mb: 1.5, fontSize: '0.76rem', borderRadius: 2 }}>
-            A polygon needs at least 3 bearings. {extracted.bearings?.length === 0 && 'The AI didn\'t find any — add them manually or re-scan a clearer image.'}
-          </Alert>
-        )}
+      {(!extracted.bearings || extracted.bearings.length < 3) && (
+        <Alert severity="warning" sx={{ mb: 1.5, fontSize: '0.76rem', borderRadius: 2 }}>
+          A polygon needs at least 3 bearings. {extracted.bearings?.length === 0 && 'The AI didn\'t find any — add them manually, paste the description, or re-scan a clearer image.'}
+        </Alert>
+      )}
 
-        <Box sx={{ maxHeight: 420, overflow: 'auto', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <Table size="small" stickyHeader>
-            <TableHead>
-              <TableRow sx={{ '& th': { bgcolor: 'action.hover', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' } }}>
-                <TableCell sx={{ width: 70 }}>Line</TableCell>
-                <TableCell sx={{ width: 60 }}>N/S</TableCell>
-                <TableCell sx={{ width: 70 }}>Deg</TableCell>
-                <TableCell sx={{ width: 70 }}>Min</TableCell>
-                <TableCell sx={{ width: 60 }}>E/W</TableCell>
-                <TableCell sx={{ width: 110 }}>Distance (m)</TableCell>
-                <TableCell sx={{ width: 40 }}></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {(extracted.bearings || []).map((b, i) => (
+      <Box sx={{ maxHeight: 420, overflow: 'auto', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow sx={{ '& th': { bgcolor: 'action.hover', fontWeight: 800, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.04em' } }}>
+              <TableCell sx={{ width: 70 }}>Line</TableCell>
+              <TableCell sx={{ width: 60 }}>N/S</TableCell>
+              <TableCell sx={{ width: 70 }}>Deg</TableCell>
+              <TableCell sx={{ width: 70 }}>Min</TableCell>
+              <TableCell sx={{ width: 60 }}>E/W</TableCell>
+              <TableCell sx={{ width: 110 }}>Distance (m)</TableCell>
+              <TableCell sx={{ width: 40 }}></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {(extracted.bearings || []).map((b, i) => {
+              const isLast = i === extracted.bearings.length - 1
+              return (
                 <TableRow key={i} hover sx={{ bgcolor: rowTint(b.conf) }}>
                   <TableCell>
                     <Typography sx={{ fontSize: '0.78rem', fontFamily: 'monospace', color: 'text.secondary' }}>
@@ -888,6 +1062,7 @@ function StepReview({ extracted, onUpdate, onUpdateBearing, onAddBearing, onRemo
                   <TableCell>
                     <TextField size="small" type="number" value={b.distance}
                                onChange={(e) => onUpdateBearing(i, 'distance', Number(e.target.value))}
+                               onKeyDown={(e) => { if (e.key === 'Enter' && isLast) { e.preventDefault(); onAddBearing() } }}
                                inputProps={{ min: 0, step: 0.01 }}
                                sx={{ '& .MuiOutlinedInput-input': { py: 0.5, fontSize: '0.78rem' } }} />
                   </TableCell>
@@ -897,55 +1072,130 @@ function StepReview({ extracted, onUpdate, onUpdateBearing, onAddBearing, onRemo
                     </IconButton>
                   </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
+              )
+            })}
+          </TableBody>
+        </Table>
+      </Box>
+      <Typography sx={{ fontSize: '0.68rem', color: 'text.disabled', mt: 0.6 }}>
+        Tip: press <strong>Enter</strong> in the last Distance cell to add another row.
+      </Typography>
 
-        {/* Live shape preview — redraws as rows are edited, so OCR slips are
-            visible before the lot is ever pinned on the real map */}
-        <Divider sx={{ my: 2 }} />
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'text.primary' }}>Live Shape Preview</Typography>
-          {(extracted.bearings?.length || 0) >= 3 && (
-            <Chip
-              size="small"
-              label={`Closure: ${fix.before.toFixed(2)} m`}
-              sx={{ bgcolor: closureColor, color: 'white', fontWeight: 700, fontSize: '0.65rem' }}
-            />
-          )}
-        </Box>
-        <BearingsSketch bearings={extracted.bearings} height={170} />
-
-        {fix.suggestions.length > 0 && (
-          <Alert severity="info" icon={<AutoFixHighIcon sx={{ fontSize: 18 }} />} sx={{ mt: 1.5, fontSize: '0.76rem', borderRadius: 2 }}>
-            <strong>The traverse doesn't close ({fix.before.toFixed(1)} m gap)</strong> — likely a transcription slip.
-            Applying a suggestion updates the table:
-            <Stack spacing={0.6} sx={{ mt: 1 }}>
-              {fix.suggestions.map((s, i) => (
-                <Box key={i} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-                  <Typography sx={{ fontSize: '0.74rem' }}>
-                    Line <strong>{s.line}</strong>: {s.label} → closes to <strong>{s.after.toFixed(2)} m</strong>
-                  </Typography>
-                  <Button size="small" variant="outlined" onClick={() => onApplyBearings(s.bearings)}
-                          sx={{ fontWeight: 700, flexShrink: 0, py: 0 }}>
-                    Apply
-                  </Button>
-                </Box>
-              ))}
-            </Stack>
-          </Alert>
+      <Divider sx={{ my: 2 }} />
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: '0.85rem', color: 'text.primary' }}>Live Shape Preview</Typography>
+        {(extracted.bearings?.length || 0) >= 3 && (
+          <Chip size="small" label={`Closure: ${fix.before.toFixed(2)} m`} sx={{ bgcolor: closureColor, color: 'white', fontWeight: 700, fontSize: '0.65rem' }} />
         )}
+      </Box>
+      <BearingsSketch bearings={extracted.bearings} height={170} />
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, gap: 1 }}>
-          <Button onClick={onBack} startIcon={<ArrowBackIcon />} sx={{ color: 'text.secondary' }}>Back</Button>
-          <Button variant="contained" color="secondary" disabled={!canContinue} onClick={onNext}
-                  endIcon={<ArrowForwardIcon />} sx={{ fontWeight: 800, borderRadius: 2.5 }}>
-            Looks good · Pin start point
+      {fix.suggestions.length > 0 && (
+        <Alert severity="info" icon={<AutoFixHighIcon sx={{ fontSize: 18 }} />} sx={{ mt: 1.5, fontSize: '0.76rem', borderRadius: 2 }}>
+          <strong>The traverse doesn't close ({fix.before.toFixed(1)} m gap)</strong> — likely a transcription slip.
+          Applying a suggestion updates the table:
+          <Stack spacing={0.6} sx={{ mt: 1 }}>
+            {fix.suggestions.map((s, i) => (
+              <Box key={i} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <Typography sx={{ fontSize: '0.74rem' }}>
+                  Line <strong>{s.line}</strong>: {s.label} → closes to <strong>{s.after.toFixed(2)} m</strong>
+                </Typography>
+                <Button size="small" variant="outlined" onClick={() => onApplyBearings(s.bearings)} sx={{ fontWeight: 700, flexShrink: 0, py: 0 }}>
+                  Apply
+                </Button>
+              </Box>
+            ))}
+          </Stack>
+        </Alert>
+      )}
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, gap: 1 }}>
+        <Button onClick={onBack} startIcon={<ArrowBackIcon />} sx={{ color: 'text.secondary' }}>Back</Button>
+        <Button variant="contained" color="secondary" disabled={!canContinue} onClick={onNext}
+                endIcon={<ArrowForwardIcon />} sx={{ fontWeight: 800, borderRadius: 2.5 }}>
+          Looks good · Pin start point
+        </Button>
+      </Box>
+    </GlassPanel>
+  )
+
+  return (
+    <>
+      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: hasImage ? '0.85fr 1.15fr' : '1fr 1.2fr' }, gap: 2.5, alignItems: 'start' }}>
+        {hasImage ? (
+          <Box sx={{ position: { lg: 'sticky' }, top: 16 }}>
+            <GlassPanel sx={{ p: 2 }}>
+              <PanelHeader
+                kicker="SOURCE"
+                title="Title Image"
+                icon={<ImageOutlinedIcon sx={{ color: NAVY, fontSize: 22 }} />}
+                action={
+                  <Tooltip title="Open full screen">
+                    <IconButton size="small" onClick={() => setLightbox(true)}><ZoomOutMapIcon /></IconButton>
+                  </Tooltip>
+                }
+              />
+              {urls[imgIdx]
+                ? <ImageZoomPanel src={urls[imgIdx]} alt="source title" height={460} />
+                : <Box sx={{ height: 460, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: '#05080F', borderRadius: 2 }}><CircularProgress sx={{ color: GOLD }} /></Box>}
+              {urls.length > 1 && (
+                <Box sx={{ display: 'flex', gap: 1, mt: 1.2 }}>
+                  {urls.map((u, i) => (
+                    <Box
+                      key={i} onClick={() => setImgIdx(i)}
+                      sx={{
+                        width: 64, height: 64, borderRadius: 1.5, overflow: 'hidden', cursor: 'pointer',
+                        border: '2px solid', borderColor: i === imgIdx ? GOLD : 'divider',
+                      }}
+                    >
+                      <img src={u} alt={`page ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </Box>
+                  ))}
+                </Box>
+              )}
+              <Typography sx={{ fontSize: '0.7rem', color: 'text.disabled', mt: 1 }}>
+                Scroll to zoom, drag to pan. Compare against the extracted fields to catch misreads.
+              </Typography>
+            </GlassPanel>
+          </Box>
+        ) : fieldsCard}
+
+        {hasImage ? <Stack spacing={2.5}>{fieldsCard}{bearingsCard}</Stack> : bearingsCard}
+      </Box>
+
+      {/* Lightbox */}
+      <Dialog open={lightbox} onClose={() => setLightbox(false)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 3, bgcolor: '#05080F' } }}>
+        {urls[imgIdx] && <ImageZoomPanel src={urls[imgIdx]} alt="title" height={Math.round(window.innerHeight * 0.8)} rounded={3} />}
+      </Dialog>
+
+      {/* Paste technical description */}
+      <Dialog open={pasteOpen} onClose={() => setPasteOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <DialogTitle sx={{ fontWeight: 800 }}>Paste a technical description</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 1.5 }}>
+            Paste the bearings text from the title. We'll read lines like <em>“N 45°30' E, 41.40 m.”</em> and build the table.
+          </Typography>
+          <TextField
+            value={pasteText} onChange={(e) => setPasteText(e.target.value)}
+            placeholder={"1. N 45°30' E , 41.40 m. to corner 2;\n2. S 12°05' E , 12.11 m. ..."}
+            fullWidth multiline minRows={6}
+            sx={{ '& textarea': { fontFamily: 'monospace', fontSize: '0.82rem' } }}
+          />
+          <Typography sx={{ fontSize: '0.74rem', color: parsed.length >= 3 ? '#16A34A' : 'text.disabled', fontWeight: 700, mt: 1 }}>
+            {parsed.length} bearing{parsed.length === 1 ? '' : 's'} detected{parsed.length > 0 && parsed.length < 3 ? ' — need at least 3' : ''}.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setPasteOpen(false)} sx={{ color: 'text.secondary', mr: 'auto' }}>Cancel</Button>
+          <Button disabled={!parsed.length} onClick={() => { onApplyBearings([...(extracted.bearings || []), ...parsed]); setPasteOpen(false); setPasteText('') }} sx={{ fontWeight: 700 }}>
+            Append
           </Button>
-        </Box>
-      </GlassPanel>
-    </Box>
+          <Button variant="contained" color="secondary" disabled={parsed.length < 3} onClick={() => { onApplyBearings(parsed); setPasteOpen(false); setPasteText('') }} sx={{ fontWeight: 800 }}>
+            Replace table
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   )
 }
 
@@ -956,21 +1206,15 @@ function StepPin({
   isLoaded, extracted, startPoint, setStartPoint, coordInput, setCoordInput, coordError, setCoordError,
   onCoordSubmit, onLocate, onMapClick, mapType, setMapType, mapRef, onBack, onNext,
 }) {
-  // Push map-type changes through to the live SDK instance — @react-google-maps
-  // sometimes ignores the prop on re-render at higher zoom levels.
   useEffect(() => {
     if (mapRef.current && mapType) mapRef.current.setMapTypeId(mapType)
   }, [mapType, mapRef])
 
-  // Tie line (BLLM monument → corner 1), when the AI extracted a parseable one.
-  // In "bllm" mode the user pins the monument and the system walks the tie
-  // line to compute corner 1 automatically.
   const tie = useMemo(() => parseTieLine(extracted?.tie_line), [extracted?.tie_line])
-  const [pinMode, setPinMode] = useState('corner')   // 'corner' | 'bllm'
+  const [pinMode, setPinMode] = useState('corner')
   const [monument, setMonument] = useState(null)
+  const acRef = useRef(null)
 
-  // Auto-center the map on the title's address so the user starts near the
-  // lot instead of a whole-country view.
   const [geoCenter, setGeoCenter] = useState(null)
   const [geoLabel, setGeoLabel] = useState(null)
   const geocodedRef = useRef(false)
@@ -1003,6 +1247,19 @@ function StepPin({
     }
   }, [pinMode, tie, onMapClick, setStartPoint])
 
+  const onPlaceChanged = () => {
+    const place = acRef.current?.getPlace()
+    if (!place?.geometry?.location) return
+    const loc = place.geometry.location
+    mapRef.current?.panTo({ lat: loc.lat(), lng: loc.lng() })
+    mapRef.current?.setZoom(18)
+  }
+
+  const dropAtCenter = () => {
+    const c = mapRef.current?.getCenter()
+    if (c) placePin(c)
+  }
+
   return (
     <GlassPanel sx={{ p: { xs: 1.5, md: 2.5 } }}>
       <PanelHeader
@@ -1017,17 +1274,12 @@ function StepPin({
         }
       />
       <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', mt: -1, mb: 2 }}>
-        Click on the satellite map to drop a pin, or paste coordinates below. The system walks the bearings from this point to plot the lot.
+        Search for the area, click the map to drop a pin, or use the center crosshair. The system walks the bearings from this point to plot the lot.
       </Typography>
 
       {tie && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5, flexWrap: 'wrap' }}>
-          <ToggleButtonGroup
-            value={pinMode}
-            exclusive
-            size="small"
-            onChange={(_, v) => { if (v) { setPinMode(v); setMonument(null) } }}
-          >
+          <ToggleButtonGroup value={pinMode} exclusive size="small" onChange={(_, v) => { if (v) { setPinMode(v); setMonument(null) } }}>
             <ToggleButton value="corner" sx={{ fontWeight: 700, fontSize: '0.7rem' }}>Pin Corner 1</ToggleButton>
             <ToggleButton value="bllm" sx={{ fontWeight: 700, fontSize: '0.7rem' }}>Pin BLLM Monument</ToggleButton>
           </ToggleButtonGroup>
@@ -1050,28 +1302,33 @@ function StepPin({
         </Box>
       )}
 
-      <Box sx={{
-        display: 'flex', gap: 1, mb: 1.5, p: 1.5, borderRadius: 2.5,
-        bgcolor: 'action.hover', alignItems: 'flex-start', flexWrap: 'wrap',
-      }}>
-        <GpsFixedIcon sx={{ fontSize: 18, color: GOLD, mt: 0.7 }} />
-        <TextField
-          size="small"
-          placeholder={`e.g. 9°37'46.46"N 123°49'29.97"E   or   9.629572, 123.824992`}
-          value={coordInput}
-          onChange={(e) => { setCoordInput(e.target.value); if (coordError) setCoordError(false) }}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onCoordSubmit() } }}
-          error={coordError}
-          helperText={coordError ? 'Could not parse — check the format' : ' '}
-          sx={{ flex: 1, minWidth: 240, '& .MuiOutlinedInput-input': { fontFamily: 'monospace', fontSize: '0.82rem' } }}
-        />
-        <Button onClick={onCoordSubmit} variant="contained" color="secondary" disabled={!coordInput.trim()} sx={{ fontWeight: 700 }}>
-          Go
-        </Button>
-        <Button onClick={onLocate} startIcon={<MyLocationIcon sx={{ fontSize: 16 }} />} variant="outlined" sx={{ fontWeight: 700 }}>
-          My Location
-        </Button>
-      </Box>
+      {/* Search + coordinate input */}
+      <Stack spacing={1} sx={{ mb: 1.5 }}>
+        {isLoaded && (
+          <Autocomplete onLoad={(ac) => { acRef.current = ac }} onPlaceChanged={onPlaceChanged}
+            options={{ componentRestrictions: { country: 'ph' }, fields: ['geometry'] }}>
+            <TextField
+              size="small" fullWidth placeholder="Search a place, barangay, or landmark…"
+              InputProps={{ startAdornment: <SearchIcon sx={{ fontSize: 18, color: 'text.disabled', mr: 1 }} /> }}
+            />
+          </Autocomplete>
+        )}
+        <Box sx={{ display: 'flex', gap: 1, p: 1.5, borderRadius: 2.5, bgcolor: 'action.hover', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <GpsFixedIcon sx={{ fontSize: 18, color: GOLD, mt: 0.7 }} />
+          <TextField
+            size="small"
+            placeholder={`e.g. 9°37'46.46"N 123°49'29.97"E   or   9.629572, 123.824992`}
+            value={coordInput}
+            onChange={(e) => { setCoordInput(e.target.value); if (coordError) setCoordError(false) }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onCoordSubmit() } }}
+            error={coordError}
+            helperText={coordError ? 'Could not parse — check the format' : ' '}
+            sx={{ flex: 1, minWidth: 240, '& .MuiOutlinedInput-input': { fontFamily: 'monospace', fontSize: '0.82rem' } }}
+          />
+          <Button onClick={onCoordSubmit} variant="contained" color="secondary" disabled={!coordInput.trim()} sx={{ fontWeight: 700 }}>Go</Button>
+          <Button onClick={onLocate} startIcon={<MyLocationIcon sx={{ fontSize: 16 }} />} variant="outlined" sx={{ fontWeight: 700 }}>My Location</Button>
+        </Box>
+      </Stack>
 
       <Box sx={{ position: 'relative', borderRadius: 3, overflow: 'hidden', border: 1, borderColor: 'divider', height: { xs: 340, md: 520 } }}>
         {!isLoaded ? (
@@ -1079,49 +1336,54 @@ function StepPin({
             <CircularProgress sx={{ color: GOLD }} />
           </Box>
         ) : (
-          <GoogleMap
-            mapContainerStyle={{ width: '100%', height: '100%' }}
-            center={startPoint || geoCenter || PH_CENTER}
-            zoom={startPoint ? 19 : geoCenter ? 15 : 6}
-            mapTypeId={mapType}
-            onClick={(e) => placePin(e.latLng)}
-            onLoad={(map) => {
-              mapRef.current = map
-              // Force the type — @react-google-maps occasionally drops the prop on initial mount
-              map.setMapTypeId(mapType)
-            }}
-            options={{
-              streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true,
-              mapTypeId: mapType,
-            }}
-          >
-            {startPoint && (
-              <Marker
-                position={startPoint}
-                draggable
-                onDragEnd={(e) => { setMonument(null); onMapClick({ latLng: e.latLng }) }}
-                label={{ text: '1', color: '#0A1628', fontWeight: '800', fontSize: '11px' }}
-                animation={window.google?.maps?.Animation?.DROP}
-              />
-            )}
-            {monument && (
-              <Marker
-                position={monument}
-                draggable
-                onDragEnd={(e) => placePin(e.latLng)}
-                label={{ text: 'B', color: 'white', fontWeight: '800', fontSize: '11px' }}
-              />
-            )}
-            {monument && startPoint && (
-              <Polyline
-                path={[monument, startPoint]}
-                options={{
+          <>
+            <GoogleMap
+              mapContainerStyle={{ width: '100%', height: '100%' }}
+              center={startPoint || geoCenter || PH_CENTER}
+              zoom={startPoint ? 19 : geoCenter ? 15 : 6}
+              mapTypeId={mapType}
+              onClick={(e) => placePin(e.latLng)}
+              onLoad={(map) => { mapRef.current = map; map.setMapTypeId(mapType) }}
+              options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true, mapTypeId: mapType }}
+            >
+              {startPoint && (
+                <Marker position={startPoint} draggable
+                  onDragEnd={(e) => { setMonument(null); onMapClick({ latLng: e.latLng }) }}
+                  label={{ text: '1', color: '#0A1628', fontWeight: '800', fontSize: '11px' }}
+                  animation={window.google?.maps?.Animation?.DROP} />
+              )}
+              {monument && (
+                <Marker position={monument} draggable onDragEnd={(e) => placePin(e.latLng)}
+                  label={{ text: 'B', color: 'white', fontWeight: '800', fontSize: '11px' }} />
+              )}
+              {monument && startPoint && (
+                <Polyline path={[monument, startPoint]} options={{
                   strokeColor: GOLD, strokeOpacity: 0, strokeWeight: 2,
                   icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: GOLD, scale: 2.5 }, offset: '0', repeat: '12px' }],
-                }}
-              />
+                }} />
+              )}
+            </GoogleMap>
+
+            {/* Center crosshair targeting overlay */}
+            {!startPoint && (
+              <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                <Box sx={{ position: 'relative', width: 40, height: 40 }}>
+                  <Box sx={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '2px', bgcolor: GOLD, transform: 'translateY(-50%)', boxShadow: '0 0 4px rgba(0,0,0,0.6)' }} />
+                  <Box sx={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '2px', bgcolor: GOLD, transform: 'translateX(-50%)', boxShadow: '0 0 4px rgba(0,0,0,0.6)' }} />
+                  <Box sx={{ position: 'absolute', inset: 8, border: `2px solid ${GOLD}`, borderRadius: '50%' }} />
+                </Box>
+              </Box>
             )}
-          </GoogleMap>
+            {!startPoint && (
+              <Button
+                onClick={dropAtCenter} size="small" variant="contained" color="secondary"
+                startIcon={<PinDropIcon sx={{ fontSize: 16 }} />}
+                sx={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', fontWeight: 800, borderRadius: 5, boxShadow: 3 }}
+              >
+                Drop pin at center
+              </Button>
+            )}
+          </>
         )}
       </Box>
 
@@ -1156,15 +1418,26 @@ function StepResult({
   const closureColor = closureSeverity === 'good' ? '#16A34A' : closureSeverity === 'ok' ? '#D97706' : '#DC2626'
   const fmt = (n, d = 2) => n.toLocaleString('en-PH', { minimumFractionDigits: d, maximumFractionDigits: d })
 
-  // Smart closure fixes — only computed when the traverse doesn't close cleanly
   const fix = useMemo(
     () => (closureSeverity === 'good' ? null : suggestClosureFixes(extracted.bearings || [])),
     [closureSeverity, extracted.bearings]
   )
 
-  // Dragging the polygon moves the whole (rigid) traverse: the dropped
-  // position of corner 1 becomes the new start point and everything replots.
+  const [unit, setUnit] = useState('sqm')
+  const [showLabels, setShowLabels] = useState(true)
+  const [showVertices, setShowVertices] = useState(false)
+  const [burst, setBurst] = useState(false)
+  const mapWrapRef = useRef(null)
   const polyRef = useRef(null)
+
+  useEffect(() => {
+    if (closureSeverity === 'good') {
+      setBurst(true)
+      const t = setTimeout(() => setBurst(false), 1900)
+      return () => clearTimeout(t)
+    }
+  }, [closureSeverity])
+
   const handlePolyDragEnd = () => {
     const path = polyRef.current?.getPath()
     if (!path?.getLength()) return
@@ -1172,11 +1445,53 @@ function StepResult({
     setStartPoint({ lat: first.lat(), lng: first.lng() })
   }
 
+  // Edge labels (bearing + distance) at each segment midpoint
+  const edgeLabels = useMemo(() => {
+    if (!showLabels) return []
+    const cs = plotted.corners
+    return (extracted.bearings || []).map((b, i) => {
+      const a = cs[i], c = cs[i + 1]
+      if (!a || !c) return null
+      return {
+        key: i,
+        pos: { lat: (a.lat + c.lat) / 2, lng: (a.lng + c.lng) / 2 },
+        text: `${b.dir1} ${b.degrees}°${String(Math.floor(b.minutes)).padStart(2, '0')}' ${b.dir2} · ${(+b.distance).toLocaleString('en-PH')} m`,
+      }
+    }).filter(Boolean)
+  }, [showLabels, plotted.corners, extracted.bearings])
+
+  const u = AREA_UNITS[unit]
+
+  const toggleFullscreen = () => {
+    const el = mapWrapRef.current
+    if (!el) return
+    if (document.fullscreenElement) document.exitFullscreen?.()
+    else el.requestFullscreen?.()
+  }
+
+  const openStaticMap = () => {
+    const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+    const pathPts = plotted.corners.map(c => `${c.lat.toFixed(6)},${c.lng.toFixed(6)}`).join('|')
+    const path = `fillcolor:0xC9A24A55|color:0xC9A24Aff|weight:3|${pathPts}`
+    const markers = plotted.corners.slice(0, -1)
+      .map((c, i) => `&markers=size:mid|label:${i + 1}|color:0xC9A24A|${c.lat.toFixed(6)},${c.lng.toFixed(6)}`).join('')
+    const url = `https://maps.googleapis.com/maps/api/staticmap?size=640x640&scale=2&maptype=satellite&path=${path}${markers}&key=${key}`
+    window.open(url, '_blank', 'noopener')
+  }
+
+  const copyVertices = () => {
+    const lines = ['corner,lat,lng,dms']
+    plotted.corners.slice(0, -1).forEach((c, i) => {
+      lines.push(`${i + 1},${c.lat.toFixed(6)},${c.lng.toFixed(6)},"${formatCoordsDMS(c.lat, c.lng)}"`)
+    })
+    navigator.clipboard?.writeText(lines.join('\n'))
+  }
+
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.5fr 1fr' }, gap: 2.5 }}>
       {/* Map */}
       <GlassPanel sx={{ p: 1.5 }}>
-        <Box sx={{ position: 'relative', borderRadius: 3, overflow: 'hidden', border: 1, borderColor: 'divider', height: { xs: 380, md: 560 } }}>
+        <Box ref={mapWrapRef} sx={{ position: 'relative', borderRadius: 3, overflow: 'hidden', border: 1, borderColor: 'divider', height: { xs: 380, md: 560 }, bgcolor: '#05080F' }}>
           {!isLoaded ? (
             <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <CircularProgress sx={{ color: GOLD }} />
@@ -1187,16 +1502,8 @@ function StepResult({
               center={plotted.corners[0]}
               zoom={19}
               mapTypeId="satellite"
-              onLoad={(map) => {
-                resultRef.current = map
-                // Belt-and-braces: force satellite via the SDK after mount so the
-                // prop can't be silently dropped on first render.
-                map.setMapTypeId('satellite')
-              }}
-              options={{
-                streetViewControl: false, mapTypeControl: false, fullscreenControl: true, zoomControl: true,
-                mapTypeId: 'satellite',
-              }}
+              onLoad={(map) => { resultRef.current = map; map.setMapTypeId('satellite') }}
+              options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true, mapTypeId: 'satellite' }}
             >
               <Polygon
                 paths={plotted.corners}
@@ -1205,38 +1512,53 @@ function StepResult({
                 options={{ fillColor: GOLD, fillOpacity: 0.35, strokeColor: GOLD, strokeWeight: 3, strokeOpacity: 1, draggable: true }}
               />
               {plotted.corners.slice(0, -1).map((c, i) => (
-                <Marker
-                  key={i}
-                  position={c}
-                  label={{ text: String(i + 1), color: NAVY, fontWeight: '800', fontSize: '11px' }}
-                />
+                <Marker key={i} position={c} label={{ text: String(i + 1), color: NAVY, fontWeight: '800', fontSize: '11px' }} />
+              ))}
+              {edgeLabels.map((e) => (
+                <OverlayViewF key={e.key} position={e.pos} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET} getPixelPositionOffset={(w, h) => ({ x: -w / 2, y: -h / 2 })}>
+                  <Box sx={{ px: 0.8, py: 0.2, borderRadius: 1, bgcolor: 'rgba(10,22,40,0.85)', border: `1px solid ${GOLD}88`, whiteSpace: 'nowrap' }}>
+                    <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: GOLD_LIGHT, fontFamily: 'monospace' }}>{e.text}</Typography>
+                  </Box>
+                </OverlayViewF>
               ))}
             </GoogleMap>
           )}
+
+          {/* Map overlay controls */}
+          {isLoaded && (
+            <Box sx={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 0.5 }}>
+              <Tooltip title={showLabels ? 'Hide edge labels' : 'Show edge labels'}>
+                <IconButton size="small" onClick={() => setShowLabels(v => !v)} sx={{ bgcolor: showLabels ? GOLD : 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: showLabels ? GOLD_LIGHT : 'white' } }}>
+                  <LabelOutlinedIcon sx={{ fontSize: 18, color: NAVY }} />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Fullscreen">
+                <IconButton size="small" onClick={toggleFullscreen} sx={{ bgcolor: 'rgba(255,255,255,0.92)', '&:hover': { bgcolor: 'white' } }}>
+                  <FullscreenIcon sx={{ fontSize: 18, color: NAVY }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+
+          {burst && <SuccessBurst />}
         </Box>
 
-        {/* Alignment controls — nudge the rigid polygon onto the imagery */}
+        {/* Alignment controls */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 1, px: 0.5, flexWrap: 'wrap' }}>
           <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mr: 'auto' }}>
             Drag the polygon to reposition · rotate to align with fences/roads in the imagery
           </Typography>
           <Tooltip title="Rotate 0.5° counter-clockwise">
-            <IconButton size="small" onClick={() => setRotation(r => +(r - 0.5).toFixed(1))}>
-              <RotateLeftIcon sx={{ fontSize: 19 }} />
-            </IconButton>
+            <IconButton size="small" onClick={() => setRotation(r => +(r - 0.5).toFixed(1))}><RotateLeftIcon sx={{ fontSize: 19 }} /></IconButton>
           </Tooltip>
           <Typography sx={{ fontSize: '0.76rem', fontFamily: 'monospace', fontWeight: 700, minWidth: 48, textAlign: 'center' }}>
             {rotation > 0 ? '+' : ''}{rotation.toFixed(1)}°
           </Typography>
           <Tooltip title="Rotate 0.5° clockwise">
-            <IconButton size="small" onClick={() => setRotation(r => +(r + 0.5).toFixed(1))}>
-              <RotateRightIcon sx={{ fontSize: 19 }} />
-            </IconButton>
+            <IconButton size="small" onClick={() => setRotation(r => +(r + 0.5).toFixed(1))}><RotateRightIcon sx={{ fontSize: 19 }} /></IconButton>
           </Tooltip>
           {rotation !== 0 && (
-            <Button size="small" onClick={() => setRotation(0)} sx={{ fontWeight: 700, fontSize: '0.7rem' }}>
-              Reset
-            </Button>
+            <Button size="small" onClick={() => setRotation(0)} sx={{ fontWeight: 700, fontSize: '0.7rem' }}>Reset</Button>
           )}
         </Box>
       </GlassPanel>
@@ -1247,9 +1569,7 @@ function StepResult({
         <GlassPanel sx={{ overflow: 'hidden' }} delay={0.05}>
           <Box sx={{ p: 2.5, background: `linear-gradient(135deg, ${NAVY} 0%, #0B1A30 100%)`, color: 'white', position: 'relative', overflow: 'hidden' }}>
             <Box sx={{ position: 'absolute', top: -30, right: -20, width: 160, height: 160, background: `radial-gradient(circle, ${GOLD}33, transparent 65%)`, pointerEvents: 'none' }} />
-            <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: GOLD, letterSpacing: '0.16em' }}>
-              PLOTTED LOT
-            </Typography>
+            <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: GOLD, letterSpacing: '0.16em' }}>PLOTTED LOT</Typography>
             <Typography sx={{ fontWeight: 800, fontSize: '1.3rem', mt: 0.3, lineHeight: 1.1 }}>
               {extracted.title_number || `LOT ${extracted.lot_number || ''}`}
             </Typography>
@@ -1257,12 +1577,11 @@ function StepResult({
               {[extracted.barangay, extracted.city_municipality, extracted.province].filter(Boolean).join(', ') || '—'}
             </Typography>
 
-            {/* Stat tiles */}
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.2, mt: 2 }}>
               <Box sx={{ p: 1.4, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
                 <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)', letterSpacing: '0.08em' }}>AREA (COMPUTED)</Typography>
                 <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: GOLD }}>
-                  <CountUp value={plotted.area} decimals={0} /> <Box component="span" sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>sqm</Box>
+                  <CountUp value={plotted.area * u.factor} decimals={u.dec} /> <Box component="span" sx={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.7)' }}>{u.label}</Box>
                 </Typography>
               </Box>
               <Box sx={{ p: 1.4, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -1272,6 +1591,15 @@ function StepResult({
                 </Typography>
               </Box>
             </Box>
+
+            <ToggleButtonGroup
+              value={unit} exclusive size="small" onChange={(_, v) => v && setUnit(v)}
+              sx={{ mt: 1.2, '& .MuiToggleButton-root': { color: 'rgba(255,255,255,0.7)', borderColor: 'rgba(255,255,255,0.2)', py: 0.2, fontSize: '0.66rem', fontWeight: 700 }, '& .Mui-selected': { color: `${NAVY} !important`, bgcolor: `${GOLD} !important` } }}
+            >
+              <ToggleButton value="sqm">sq m</ToggleButton>
+              <ToggleButton value="ha">hectares</ToggleButton>
+              <ToggleButton value="sqft">sq ft</ToggleButton>
+            </ToggleButtonGroup>
           </Box>
 
           <Box sx={{ p: 2.5 }}>
@@ -1281,7 +1609,14 @@ function StepResult({
               {Number.isFinite(extracted.land_area_sqm) && (
                 <>
                   <Typography sx={{ fontSize: '0.7rem', color: 'text.disabled', fontWeight: 700, textTransform: 'uppercase' }}>Area (on title)</Typography>
-                  <Typography sx={{ fontSize: '0.82rem', color: 'text.primary', fontWeight: 700 }}>{fmt(extracted.land_area_sqm, 2)} sq. m.</Typography>
+                  <Typography sx={{ fontSize: '0.82rem', color: 'text.primary', fontWeight: 700 }}>
+                    {fmt(extracted.land_area_sqm, 2)} sq. m.
+                    {plotted.area > 0 && (() => {
+                      const delta = Math.abs(plotted.area - extracted.land_area_sqm) / extracted.land_area_sqm * 100
+                      const c = delta < 2 ? '#16A34A' : delta < 10 ? '#D97706' : '#DC2626'
+                      return <Box component="span" sx={{ ml: 1, px: 0.7, py: 0.1, borderRadius: 1, fontSize: '0.62rem', fontWeight: 800, color: 'white', bgcolor: c }}>±{delta.toFixed(1)}%</Box>
+                    })()}
+                  </Typography>
                 </>
               )}
               <Typography sx={{ fontSize: '0.7rem', color: 'text.disabled', fontWeight: 700, textTransform: 'uppercase' }}>Lot No.</Typography>
@@ -1312,19 +1647,14 @@ function StepResult({
               <Box sx={{ mt: 1.2, p: 1.2, borderRadius: 2, bgcolor: 'action.hover' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, mb: 0.6 }}>
                   <AutoFixHighIcon sx={{ fontSize: 15, color: GOLD_DARK }} />
-                  <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: 'text.primary' }}>
-                    Smart fix — likely transcription slip found
-                  </Typography>
+                  <Typography sx={{ fontSize: '0.74rem', fontWeight: 800, color: 'text.primary' }}>Smart fix — likely transcription slip found</Typography>
                 </Box>
                 {fix.suggestions.slice(0, 2).map((s, i) => (
                   <Box key={i} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 0.4 }}>
                     <Typography sx={{ fontSize: '0.73rem', color: 'text.secondary' }}>
                       Line <strong>{s.line}</strong>: {s.label} → <strong style={{ color: '#16A34A' }}>{fmt(s.after, 2)} m</strong>
                     </Typography>
-                    <Button size="small" variant="outlined" onClick={() => onApplyBearings(s.bearings)}
-                            sx={{ fontWeight: 700, flexShrink: 0, py: 0, fontSize: '0.68rem' }}>
-                      Apply
-                    </Button>
+                    <Button size="small" variant="outlined" onClick={() => onApplyBearings(s.bearings)} sx={{ fontWeight: 700, flexShrink: 0, py: 0, fontSize: '0.68rem' }}>Apply</Button>
                   </Box>
                 ))}
               </Box>
@@ -1332,21 +1662,50 @@ function StepResult({
           </CardContent>
         </GlassPanel>
 
-        <GlassPanel delay={0.15}>
+        {/* Corner coordinates */}
+        <GlassPanel delay={0.13}>
+          <CardContent sx={{ pb: showVertices ? 2 : '16px !important' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Button onClick={() => setShowVertices(v => !v)} sx={{ fontWeight: 800, color: 'text.primary', textTransform: 'none', px: 0 }}
+                      endIcon={<KeyboardArrowDownIcon sx={{ transform: showVertices ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}>
+                Corner Coordinates ({plotted.corners.length - 1})
+              </Button>
+              <Tooltip title="Copy all as CSV">
+                <IconButton size="small" onClick={copyVertices}><ContentCopyIcon sx={{ fontSize: 17 }} /></IconButton>
+              </Tooltip>
+            </Box>
+            <Collapse in={showVertices}>
+              <Box sx={{ maxHeight: 220, overflow: 'auto', mt: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow sx={{ '& th': { bgcolor: 'action.hover', fontWeight: 800, fontSize: '0.66rem' } }}>
+                      <TableCell>#</TableCell><TableCell>Latitude</TableCell><TableCell>Longitude</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {plotted.corners.slice(0, -1).map((c, i) => (
+                      <TableRow key={i} hover>
+                        <TableCell sx={{ fontWeight: 700 }}>{i + 1}</TableCell>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{c.lat.toFixed(6)}</TableCell>
+                        <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{c.lng.toFixed(6)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+            </Collapse>
+          </CardContent>
+        </GlassPanel>
+
+        <GlassPanel delay={0.16}>
           <CardContent>
-            <Typography sx={{ fontWeight: 800, color: 'text.primary', mb: 1.2 }}>
-              Preview & Download Survey PDFs
-            </Typography>
-            <SurveyPdfButton
-              propertyMap={syntheticMap}
-              transaction={null}
-              size="medium"
-              variant="contained"
-              fullWidth
-              label="Preview Survey PDFs"
-            />
+            <Typography sx={{ fontWeight: 800, color: 'text.primary', mb: 1.2 }}>Export & Download</Typography>
+            <SurveyPdfButton propertyMap={syntheticMap} transaction={null} size="medium" variant="contained" fullWidth label="Preview Survey PDFs" />
+            <Button onClick={openStaticMap} startIcon={<DownloadIcon />} variant="outlined" fullWidth sx={{ mt: 1, fontWeight: 700 }}>
+              Open map image (satellite + lot)
+            </Button>
             <Typography sx={{ fontSize: '0.7rem', color: 'text.disabled', mt: 1.2 }}>
-              You'll see a full-screen preview of each PDF before deciding to download. Both PDFs are branded with FilipinoTracks.
+              The PDFs are branded with FilipinoTracks. The map image opens in a new tab — right-click to save it.
             </Typography>
           </CardContent>
         </GlassPanel>
