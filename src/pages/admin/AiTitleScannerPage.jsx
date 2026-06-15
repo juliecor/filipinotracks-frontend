@@ -60,6 +60,7 @@ import ImageZoomPanel from '../../components/ImageZoomPanel'
 import ImageEditDialog from '../../components/ImageEditDialog'
 import SuccessBurst from '../../components/SuccessBurst'
 import CinematicReveal from '../../components/CinematicReveal'
+import ZonalValueCard from '../../components/ZonalValueCard'
 
 const PH_CENTER = { lat: 12.8797, lng: 121.7740 }
 const GOLD_GRADIENT = `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`
@@ -1639,9 +1640,9 @@ function StepResult({
   }
 
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.5fr 1fr' }, gap: 2.5 }}>
-      {/* Map */}
-      <GlassPanel sx={{ p: 1.5 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.5fr 1fr' }, gap: 2.5, alignItems: 'start' }}>
+      {/* Map — sticky on desktop so it stays in view while scrolling the panel */}
+      <GlassPanel sx={{ p: 1.5, position: { lg: 'sticky' }, top: 16, alignSelf: 'start', zIndex: 1 }}>
         <Box ref={mapWrapRef} sx={{ position: 'relative', borderRadius: 3, overflow: 'hidden', border: 1, borderColor: 'divider', height: { xs: 380, md: 560 }, bgcolor: '#05080F' }}>
           {!isLoaded ? (
             <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1840,6 +1841,11 @@ function StepResult({
             </GlassPanel>
           )
         })()}
+
+        {/* Estimated Zonal Value (BIR) */}
+        <GlassPanel delay={0.085}>
+          <ZonalValueCard extracted={extracted} area={plotted.area} />
+        </GlassPanel>
 
         {/* Survey Summary */}
         {survey && (() => {
