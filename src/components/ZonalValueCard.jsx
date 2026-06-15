@@ -11,6 +11,7 @@ import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { fetchZonalValue, median, CLASSIFICATION_LABELS } from '../utils/zonalValue'
 import { GOLD, GOLD_DARK, NAVY } from '../theme/theme'
+import TransferTaxEstimator from './TransferTaxEstimator'
 
 const peso = (n) => '₱' + Math.round(n || 0).toLocaleString('en-PH')
 
@@ -65,7 +66,12 @@ export default function ZonalValueCard({ extracted, area }) {
     fetchZonalValue({ province, city, barangay })
       .then((data) => {
         setState({ loading: false, data, error: null })
-        setCls('') // start unselected — the user picks the classification themselves
+        // Pre-select the top (highest-priority, usually Residential) classification;
+        // the user can switch to another if it's not right.
+        const codes = [...(data.classifications || [])].sort(
+          (a, b) => rankClass(a) - rankClass(b) || String(a).localeCompare(String(b))
+        )
+        setCls(codes[0] || '')
       })
       .catch((err) => {
         const status = err.response?.status
@@ -249,6 +255,9 @@ export default function ZonalValueCard({ extracted, area }) {
           </Collapse>
         </>
       )}
+
+      {/* Transfer taxes & fees, off the zonal value (or a selling price you enter) */}
+      {cls && total > 0 && <TransferTaxEstimator zonalValue={total} />}
 
       <Divider sx={{ my: 1.2 }} />
       <Typography sx={{ fontSize: '0.68rem', color: 'text.disabled' }}>
