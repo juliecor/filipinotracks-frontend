@@ -26,6 +26,8 @@ import AddIcon from '@mui/icons-material/Add'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import CancelIcon from '@mui/icons-material/Cancel'
+import VerifiedIcon from '@mui/icons-material/Verified'
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward'
 import ArrowBackIcon   from '@mui/icons-material/ArrowBack'
 import ContentPasteIcon from '@mui/icons-material/ContentPaste'
@@ -46,6 +48,7 @@ import { scanTitleImage } from '../../utils/openaiVision'
 import { plotPolygonFromBearings, closureError, cornersToGeoJsonPolygon, quadrantToTrueBearing, destinationPoint, parseTieLine } from '../../utils/bearingsPlotter'
 import { suggestClosureFixes } from '../../utils/closureAutoFix'
 import { parseBearingsText } from '../../utils/bearingsText'
+import { runTitleChecks } from '../../utils/titleChecks'
 import { parseCoordinates, formatCoordsDMS } from '../../utils/coordinates'
 import { polygonAreaSqm } from '../../utils/polygonGis'
 import { useToast } from '../../context/ToastContext'
@@ -54,6 +57,7 @@ import BearingsSketch from '../../components/BearingsSketch'
 import ImageZoomPanel from '../../components/ImageZoomPanel'
 import ImageEditDialog from '../../components/ImageEditDialog'
 import SuccessBurst from '../../components/SuccessBurst'
+import CinematicReveal from '../../components/CinematicReveal'
 
 const PH_CENTER = { lat: 12.8797, lng: 121.7740 }
 const GOLD_GRADIENT = `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`
@@ -98,6 +102,14 @@ const AREA_UNITS = {
   sqm:  { label: 'sq m',     factor: 1,        dec: 0 },
   ha:   { label: 'hectares', factor: 1 / 10000, dec: 4 },
   sqft: { label: 'sq ft',    factor: 10.76391, dec: 0 },
+}
+
+// Fields the guided-review walkthrough can step through, in display order.
+const REVIEW_ORDER = ['title_number', 'lot_number', 'block_number', 'survey_plan_number', 'registered_owner', 'land_area_sqm', 'barangay', 'city_municipality', 'province']
+const FIELD_LABELS = {
+  title_number: 'Title Number', lot_number: 'Lot Number', block_number: 'Block',
+  survey_plan_number: 'Survey Plan Number', registered_owner: 'Registered Owner',
+  land_area_sqm: 'Land Area', barangay: 'Barangay', city_municipality: 'City / Municipality', province: 'Province',
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -326,6 +338,7 @@ export default function AiTitleScannerPage() {
   const [mapType, setMapType] = useState('satellite')
   const [rotation, setRotation] = useState(0)       // fine-tune rotation (deg) on the result map
   const [resume, setResume] = useState(null)        // restored-from-localStorage payload offer
+  const [cinematic, setCinematic] = useState(false) // fullscreen boundary-reveal overlay
 
   const mapRef    = useRef(null)
   const resultRef = useRef(null)
@@ -511,6 +524,9 @@ export default function AiTitleScannerPage() {
     }
   }, [extracted, plotted, startPoint])
 
+  // Advancing from "Pin" to "Result" kicks off the fullscreen cinematic reveal.
+  const goToResult = () => { setStep(3); setCinematic(true) }
+
   const handleRestart = () => {
     setStep(0)
     setFiles([])
@@ -519,6 +535,7 @@ export default function AiTitleScannerPage() {
     setStartPoint(null)
     setCoordInput('')
     setRotation(0)
+    setCinematic(false)
     try { localStorage.removeItem(STORAGE_KEY) } catch { /* ignore */ }
   }
 
@@ -601,7 +618,7 @@ export default function AiTitleScannerPage() {
                 setMapType={setMapType}
                 mapRef={mapRef}
                 onBack={() => setStep(1)}
-                onNext={() => setStep(3)}
+                onNext={goToResult}
               />
             )}
 
@@ -617,12 +634,25 @@ export default function AiTitleScannerPage() {
                 onApplyBearings={applyBearings}
                 resultRef={resultRef}
                 syntheticMap={syntheticMap}
+                initialRevealed={cinematic}
                 onBack={() => setStep(2)}
               />
             )}
           </motion.div>
         </AnimatePresence>
       </Box>
+
+      {/* Fullscreen cinematic boundary reveal */}
+      <AnimatePresence>
+        {cinematic && step === 3 && plotted && extracted && isLoaded && (
+          <CinematicReveal
+            key="cinematic"
+            plotted={plotted}
+            extracted={extracted}
+            onClose={() => setCinematic(false)}
+          />
+        )}
+      </AnimatePresence>
     </Box>
   )
 }
@@ -902,10 +932,25 @@ function StepReview({ extracted, original, files, onUpdate, onUpdateBearing, onA
     medium: { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#D97706', borderWidth: 2 } },
     low:    { '& .MuiOutlinedInput-notchedOutline': { borderColor: '#DC2626', borderWidth: 2 } },
   }
-  const confSx = (key) => CONF_TINT[fieldConf[key]] || {}
-  const hasUnsureFields = Object.values(fieldConf).some(c => c === 'medium' || c === 'low')
   const rowTint = (conf) =>
     conf === 'low' ? 'rgba(220,38,38,0.08)' : conf === 'medium' ? 'rgba(217,119,6,0.08)' : undefined
+
+  // Guided review — step through only the fields the AI was unsure about.
+  const unsureKeys = REVIEW_ORDER.filter(k => fieldConf[k] === 'medium' || fieldConf[k] === 'low')
+  const [guide, setGuide] = useState(-1)         // -1 = inactive; otherwise index into unsureKeys
+  const activeKey = guide >= 0 ? unsureKeys[guide] : null
+  const fieldRefs = useRef({})
+  useEffect(() => {
+    if (guide < 0) return
+    const el = fieldRefs.current[unsureKeys[guide]]
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el.focus?.(), 250) }
+  }, [guide]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const GLOW = { '& .MuiOutlinedInput-root': { boxShadow: `0 0 0 3px ${GOLD}66`, borderRadius: 1 } }
+  // Per-field sx: confidence tint + active-guide glow
+  const fieldSx = (key) => ({ ...(CONF_TINT[fieldConf[key]] || {}), ...(key === activeKey ? GLOW : {}) })
+  const confSx = fieldSx
+  const refFor = (key) => (el) => { fieldRefs.current[key] = el }
 
   // "Edited from AI" dot — shown when a field differs from the original scan.
   const editedAdornment = (key) => {
@@ -953,32 +998,54 @@ function StepReview({ extracted, original, files, onUpdate, onUpdateBearing, onA
           />
         }
       />
-      <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary', mb: hasUnsureFields ? 0.5 : 2 }}>
+      <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary', mb: unsureKeys.length ? 1.5 : 2 }}>
         Review what the AI read. Edit any field if it misread something — a gold dot marks fields you've changed.
       </Typography>
-      {hasUnsureFields && (
-        <Typography sx={{ fontSize: '0.72rem', color: '#D97706', fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 0.6 }}>
-          <WarningAmberIcon sx={{ fontSize: 15 }} />
-          Fields outlined in amber or red are ones the AI was less sure about — double-check those first.
-        </Typography>
+      {unsureKeys.length > 0 && (
+        <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, bgcolor: `${GOLD}14`, border: `1px solid ${GOLD}55` }}>
+          {guide < 0 ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <WarningAmberIcon sx={{ fontSize: 18, color: GOLD_DARK }} />
+              <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: 'text.primary', flex: 1, minWidth: 140 }}>
+                {unsureKeys.length} field{unsureKeys.length > 1 ? 's' : ''} the AI was unsure about.
+              </Typography>
+              <Button size="small" variant="contained" color="secondary" onClick={() => setGuide(0)} endIcon={<ArrowForwardIcon />} sx={{ fontWeight: 800 }}>
+                Guided review
+              </Button>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Chip size="small" label={`${guide + 1} / ${unsureKeys.length}`} sx={{ bgcolor: GOLD, color: NAVY, fontWeight: 800 }} />
+              <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: 'text.primary', flex: 1, minWidth: 160 }}>
+                Check the <strong>{FIELD_LABELS[activeKey]}</strong> against the title image.
+              </Typography>
+              <Button size="small" disabled={guide === 0} onClick={() => setGuide(g => g - 1)} sx={{ color: 'text.secondary' }}>Back</Button>
+              {guide < unsureKeys.length - 1 ? (
+                <Button size="small" variant="contained" color="secondary" endIcon={<ArrowForwardIcon />} onClick={() => setGuide(g => g + 1)} sx={{ fontWeight: 800 }}>Looks right</Button>
+              ) : (
+                <Button size="small" variant="contained" color="secondary" endIcon={<CheckCircleIcon />} onClick={() => setGuide(-1)} sx={{ fontWeight: 800 }}>Done</Button>
+              )}
+            </Box>
+          )}
+        </Box>
       )}
 
       <Stack spacing={1.5}>
-        <TextField size="small" label="Title Number" value={extracted.title_number || ''} onChange={(e) => onUpdate('title_number', e.target.value)} fullWidth sx={confSx('title_number')} InputProps={editedAdornment('title_number')} />
+        <TextField size="small" label="Title Number" inputRef={refFor('title_number')} value={extracted.title_number || ''} onChange={(e) => onUpdate('title_number', e.target.value)} fullWidth sx={confSx('title_number')} InputProps={editedAdornment('title_number')} />
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField size="small" label="Lot Number" value={extracted.lot_number || ''} onChange={(e) => onUpdate('lot_number', e.target.value)} fullWidth sx={confSx('lot_number')} InputProps={editedAdornment('lot_number')} />
-          <TextField size="small" label="Block" value={extracted.block_number || ''} onChange={(e) => onUpdate('block_number', e.target.value)} sx={{ width: 110, ...confSx('block_number') }} InputProps={editedAdornment('block_number')} />
+          <TextField size="small" label="Lot Number" inputRef={refFor('lot_number')} value={extracted.lot_number || ''} onChange={(e) => onUpdate('lot_number', e.target.value)} fullWidth sx={confSx('lot_number')} InputProps={editedAdornment('lot_number')} />
+          <TextField size="small" label="Block" inputRef={refFor('block_number')} value={extracted.block_number || ''} onChange={(e) => onUpdate('block_number', e.target.value)} sx={{ width: 110, ...confSx('block_number') }} InputProps={editedAdornment('block_number')} />
         </Box>
-        <TextField size="small" label="Survey Plan Number" value={extracted.survey_plan_number || ''} onChange={(e) => onUpdate('survey_plan_number', e.target.value)} fullWidth sx={confSx('survey_plan_number')} InputProps={editedAdornment('survey_plan_number')} />
-        <TextField size="small" label="Registered Owner" value={extracted.registered_owner || ''} onChange={(e) => onUpdate('registered_owner', e.target.value)} fullWidth sx={confSx('registered_owner')} InputProps={editedAdornment('registered_owner')} />
-        <TextField size="small" label="Land Area (sqm)" type="number" value={extracted.land_area_sqm ?? ''}
+        <TextField size="small" label="Survey Plan Number" inputRef={refFor('survey_plan_number')} value={extracted.survey_plan_number || ''} onChange={(e) => onUpdate('survey_plan_number', e.target.value)} fullWidth sx={confSx('survey_plan_number')} InputProps={editedAdornment('survey_plan_number')} />
+        <TextField size="small" label="Registered Owner" inputRef={refFor('registered_owner')} value={extracted.registered_owner || ''} onChange={(e) => onUpdate('registered_owner', e.target.value)} fullWidth sx={confSx('registered_owner')} InputProps={editedAdornment('registered_owner')} />
+        <TextField size="small" label="Land Area (sqm)" type="number" inputRef={refFor('land_area_sqm')} value={extracted.land_area_sqm ?? ''}
                    onChange={(e) => onUpdate('land_area_sqm', e.target.value === '' ? null : Number(e.target.value))} fullWidth sx={confSx('land_area_sqm')} />
         <Divider sx={{ my: 0.5 }} />
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField size="small" label="Barangay" value={extracted.barangay || ''} onChange={(e) => onUpdate('barangay', e.target.value)} fullWidth sx={confSx('barangay')} InputProps={editedAdornment('barangay')} />
-          <TextField size="small" label="City/Municipality" value={extracted.city_municipality || ''} onChange={(e) => onUpdate('city_municipality', e.target.value)} fullWidth sx={confSx('city_municipality')} InputProps={editedAdornment('city_municipality')} />
+          <TextField size="small" label="Barangay" inputRef={refFor('barangay')} value={extracted.barangay || ''} onChange={(e) => onUpdate('barangay', e.target.value)} fullWidth sx={confSx('barangay')} InputProps={editedAdornment('barangay')} />
+          <TextField size="small" label="City/Municipality" inputRef={refFor('city_municipality')} value={extracted.city_municipality || ''} onChange={(e) => onUpdate('city_municipality', e.target.value)} fullWidth sx={confSx('city_municipality')} InputProps={editedAdornment('city_municipality')} />
         </Box>
-        <TextField size="small" label="Province" value={extracted.province || ''} onChange={(e) => onUpdate('province', e.target.value)} fullWidth sx={confSx('province')} InputProps={editedAdornment('province')} />
+        <TextField size="small" label="Province" inputRef={refFor('province')} value={extracted.province || ''} onChange={(e) => onUpdate('province', e.target.value)} fullWidth sx={confSx('province')} InputProps={editedAdornment('province')} />
         {extracted.tie_line && (
           <TextField size="small" label="Tie Line" value={extracted.tie_line} onChange={(e) => onUpdate('tie_line', e.target.value)} fullWidth multiline minRows={2} />
         )}
@@ -1412,7 +1479,7 @@ function StepPin({
    ════════════════════════════════════════════════════════════════════ */
 function StepResult({
   isLoaded, extracted, plotted, resultRef, syntheticMap,
-  setStartPoint, rotation, setRotation, onApplyBearings, onBack,
+  setStartPoint, rotation, setRotation, onApplyBearings, onBack, initialRevealed = false,
 }) {
   const closureSeverity = plotted.closure.meters < 1 ? 'good' : plotted.closure.meters < 5 ? 'ok' : 'warning'
   const closureColor = closureSeverity === 'good' ? '#16A34A' : closureSeverity === 'ok' ? '#D97706' : '#DC2626'
@@ -1429,14 +1496,60 @@ function StepResult({
   const [burst, setBurst] = useState(false)
   const mapWrapRef = useRef(null)
   const polyRef = useRef(null)
+  // Captured once: did the cinematic overlay handle the reveal? (prop flips
+  // false when the overlay closes, but this must stay stable.)
+  const cinematicHandledRef = useRef(initialRevealed)
 
+  // Instant Verify — automated checklist verdict
+  const verify = useMemo(() => runTitleChecks(extracted, plotted), [extracted, plotted])
+
+  /* ── Animated boundary reveal ──
+   * On entering this screen the lot traces itself out edge-by-edge before the
+   * final draggable polygon takes over. `reveal` runs 0 → nEdges; `revealed`
+   * flips true when the trace finishes. Runs once per mount. */
+  // When the fullscreen cinematic handled the reveal, start already settled.
+  const [reveal, setReveal] = useState(initialRevealed ? plotted.corners.length - 1 : 0)
+  const [revealed, setRevealed] = useState(initialRevealed)
   useEffect(() => {
-    if (closureSeverity === 'good') {
+    if (initialRevealed) return   // cinematic overlay already traced the boundary
+    const nEdges = plotted.corners.length - 1
+    if (nEdges < 1) { setRevealed(true); return }
+    let raf, start
+    const total = Math.min(2200, Math.max(900, nEdges * 320))
+    const tick = (t) => {
+      if (start === undefined) start = t
+      const p = Math.min(1, (t - start) / total)
+      setReveal((1 - Math.pow(1 - p, 2)) * nEdges)
+      if (p < 1) raf = requestAnimationFrame(tick)
+      else setRevealed(true)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Partial path traced so far (while animating)
+  const drawn = useMemo(() => {
+    if (revealed) return null
+    const cs = plotted.corners
+    const full = Math.floor(reveal)
+    const frac = reveal - full
+    const pts = cs.slice(0, full + 1)
+    if (full < cs.length - 1 && frac > 0) {
+      const a = cs[full], b = cs[full + 1]
+      pts.push({ lat: a.lat + (b.lat - a.lat) * frac, lng: a.lng + (b.lng - a.lng) * frac })
+    }
+    return pts
+  }, [revealed, reveal, plotted.corners])
+
+  // Confetti once the inline reveal finishes on a clean closure. Skipped when
+  // the cinematic overlay ran — it fires its own burst so we don't double up.
+  useEffect(() => {
+    if (!cinematicHandledRef.current && revealed && closureSeverity === 'good') {
       setBurst(true)
       const t = setTimeout(() => setBurst(false), 1900)
       return () => clearTimeout(t)
     }
-  }, [closureSeverity])
+  }, [revealed, closureSeverity])
 
   const handlePolyDragEnd = () => {
     const path = polyRef.current?.getPath()
@@ -1505,22 +1618,43 @@ function StepResult({
               onLoad={(map) => { resultRef.current = map; map.setMapTypeId('satellite') }}
               options={{ streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControl: true, mapTypeId: 'satellite' }}
             >
-              <Polygon
-                paths={plotted.corners}
-                onLoad={(poly) => { polyRef.current = poly }}
-                onDragEnd={handlePolyDragEnd}
-                options={{ fillColor: GOLD, fillOpacity: 0.35, strokeColor: GOLD, strokeWeight: 3, strokeOpacity: 1, draggable: true }}
-              />
-              {plotted.corners.slice(0, -1).map((c, i) => (
-                <Marker key={i} position={c} label={{ text: String(i + 1), color: NAVY, fontWeight: '800', fontSize: '11px' }} />
-              ))}
-              {edgeLabels.map((e) => (
-                <OverlayViewF key={e.key} position={e.pos} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET} getPixelPositionOffset={(w, h) => ({ x: -w / 2, y: -h / 2 })}>
-                  <Box sx={{ px: 0.8, py: 0.2, borderRadius: 1, bgcolor: 'rgba(10,22,40,0.85)', border: `1px solid ${GOLD}88`, whiteSpace: 'nowrap' }}>
-                    <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: GOLD_LIGHT, fontFamily: 'monospace' }}>{e.text}</Typography>
-                  </Box>
-                </OverlayViewF>
-              ))}
+              {/* While animating: trace the boundary edge-by-edge */}
+              {!revealed && drawn && (
+                <>
+                  <Polyline path={drawn} options={{ strokeColor: GOLD, strokeWeight: 4, strokeOpacity: 1 }} />
+                  {plotted.corners.slice(0, Math.min(Math.floor(reveal) + 1, plotted.corners.length - 1)).map((c, i) => (
+                    <Marker key={i} position={c} label={{ text: String(i + 1), color: NAVY, fontWeight: '800', fontSize: '11px' }} />
+                  ))}
+                  {drawn.length > 1 && (
+                    <Marker
+                      position={drawn[drawn.length - 1]}
+                      icon={{ path: window.google?.maps?.SymbolPath?.CIRCLE, scale: 6, fillColor: '#FFF7E0', fillOpacity: 1, strokeColor: GOLD, strokeWeight: 3 }}
+                    />
+                  )}
+                </>
+              )}
+
+              {/* After the reveal: the final draggable polygon + labels */}
+              {revealed && (
+                <>
+                  <Polygon
+                    paths={plotted.corners}
+                    onLoad={(poly) => { polyRef.current = poly }}
+                    onDragEnd={handlePolyDragEnd}
+                    options={{ fillColor: GOLD, fillOpacity: 0.35, strokeColor: GOLD, strokeWeight: 3, strokeOpacity: 1, draggable: true }}
+                  />
+                  {plotted.corners.slice(0, -1).map((c, i) => (
+                    <Marker key={i} position={c} label={{ text: String(i + 1), color: NAVY, fontWeight: '800', fontSize: '11px' }} />
+                  ))}
+                  {edgeLabels.map((e) => (
+                    <OverlayViewF key={e.key} position={e.pos} mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET} getPixelPositionOffset={(w, h) => ({ x: -w / 2, y: -h / 2 })}>
+                      <Box sx={{ px: 0.8, py: 0.2, borderRadius: 1, bgcolor: 'rgba(10,22,40,0.85)', border: `1px solid ${GOLD}88`, whiteSpace: 'nowrap' }}>
+                        <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, color: GOLD_LIGHT, fontFamily: 'monospace' }}>{e.text}</Typography>
+                      </Box>
+                    </OverlayViewF>
+                  ))}
+                </>
+              )}
             </GoogleMap>
           )}
 
@@ -1537,6 +1671,13 @@ function StepResult({
                   <FullscreenIcon sx={{ fontSize: 18, color: NAVY }} />
                 </IconButton>
               </Tooltip>
+            </Box>
+          )}
+
+          {!revealed && (
+            <Box sx={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 0.8, px: 1.5, py: 0.6, borderRadius: 5, bgcolor: 'rgba(5,8,15,0.75)', border: `1px solid ${GOLD}66` }}>
+              <Box component={motion.div} animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 0.9, repeat: Infinity }} sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: GOLD }} />
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, color: GOLD, letterSpacing: '0.08em' }}>TRACING BOUNDARY…</Typography>
             </Box>
           )}
 
@@ -1624,6 +1765,43 @@ function StepResult({
             </Box>
           </Box>
         </GlassPanel>
+
+        {/* Instant Verify — automated checklist */}
+        {(() => {
+          const vColor = verify.verdict === 'pass' ? '#16A34A' : verify.verdict === 'warn' ? '#D97706' : '#DC2626'
+          const statusIcon = (s) => s === 'pass'
+            ? <CheckCircleIcon sx={{ fontSize: 17, color: '#16A34A' }} />
+            : s === 'warn'
+              ? <WarningAmberIcon sx={{ fontSize: 17, color: '#D97706' }} />
+              : <CancelIcon sx={{ fontSize: 17, color: '#DC2626' }} />
+          return (
+            <GlassPanel delay={0.08} sx={{ overflow: 'hidden' }}>
+              <Box sx={{ px: 2.5, py: 1.6, display: 'flex', alignItems: 'center', gap: 1.2, bgcolor: `${vColor}14`, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <VerifiedIcon sx={{ color: vColor }} />
+                <Box sx={{ flex: 1 }}>
+                  <Typography sx={{ fontSize: '0.6rem', fontWeight: 800, color: vColor, letterSpacing: '0.14em' }}>INSTANT VERIFY</Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.92rem', color: 'text.primary' }}>
+                    {verify.verdict === 'pass' ? 'All checks passed' : verify.verdict === 'warn' ? 'Passed with cautions' : 'Needs attention'}
+                  </Typography>
+                </Box>
+                <Chip size="small" label={`${verify.passed}/${verify.total}`} sx={{ bgcolor: vColor, color: 'white', fontWeight: 800 }} />
+              </Box>
+              <CardContent sx={{ py: 1.5 }}>
+                <Stack spacing={1}>
+                  {verify.checks.map((c, i) => (
+                    <Box key={i} sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                      <Box sx={{ mt: 0.2 }}>{statusIcon(c.status)}</Box>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: '0.78rem', fontWeight: 700, color: 'text.primary' }}>{c.label}</Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: 'text.secondary' }}>{c.detail}</Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                </Stack>
+              </CardContent>
+            </GlassPanel>
+          )
+        })()}
 
         <GlassPanel delay={0.1} sx={{ borderLeft: `4px solid ${closureColor}` }}>
           <CardContent>
