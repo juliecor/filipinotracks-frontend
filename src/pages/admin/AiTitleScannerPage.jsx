@@ -38,6 +38,7 @@ import ScienceIcon from '@mui/icons-material/Science'
 import SearchIcon from '@mui/icons-material/Search'
 import FullscreenIcon from '@mui/icons-material/Fullscreen'
 import LabelOutlinedIcon from '@mui/icons-material/LabelOutlined'
+import StraightenIcon from '@mui/icons-material/Straighten'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import DownloadIcon from '@mui/icons-material/Download'
 import CropRotateIcon from '@mui/icons-material/CropRotate'
@@ -49,6 +50,7 @@ import { plotPolygonFromBearings, closureError, cornersToGeoJsonPolygon, quadran
 import { suggestClosureFixes } from '../../utils/closureAutoFix'
 import { parseBearingsText } from '../../utils/bearingsText'
 import { runTitleChecks } from '../../utils/titleChecks'
+import { surveyMetrics } from '../../utils/surveyMetrics'
 import { parseCoordinates, formatCoordsDMS } from '../../utils/coordinates'
 import { polygonAreaSqm } from '../../utils/polygonGis'
 import { useToast } from '../../context/ToastContext'
@@ -432,6 +434,27 @@ export default function AiTitleScannerPage() {
     toast.success('Loaded a demo title — no AI call used.')
   }
 
+  // Focused re-scan: re-send the original image(s) asking the AI to concentrate
+  // on the technical description, then swap in the freshly-read bearings.
+  const [rescanning, setRescanning] = useState(false)
+  const handleRescanBearings = async () => {
+    if (!files.length) return
+    setRescanning(true)
+    try {
+      const result = await scanTitleImage(files, { focus: 'bearings' })
+      if (result?.bearings?.length) {
+        setExtracted(prev => ({ ...prev, bearings: result.bearings }))
+        toast.success(`Re-read ${result.bearings.length} bearing${result.bearings.length === 1 ? '' : 's'} from the title.`)
+      } else {
+        toast.error('Re-scan found no bearings. Try a clearer or straighter image.')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Re-scan failed. Try again in a moment.')
+    } finally {
+      setRescanning(false)
+    }
+  }
+
   const removeFile = (idx) => setFiles(prev => prev.filter((_, i) => i !== idx))
   const replaceFile = (idx, newFile) => setFiles(prev => prev.map((f, i) => (i === idx ? newFile : f)))
 
@@ -596,6 +619,8 @@ export default function AiTitleScannerPage() {
                 onAddBearing={addBearing}
                 onRemoveBearing={removeBearing}
                 onApplyBearings={applyBearings}
+                onRescanBearings={handleRescanBearings}
+                rescanning={rescanning}
                 onBack={() => setStep(0)}
                 onNext={() => setStep(2)}
               />
@@ -920,7 +945,7 @@ function StepUpload({ files, getRootProps, getInputProps, isDragActive, onRemove
 /* ════════════════════════════════════════════════════════════════════
    STEP 2 — Review & edit
    ════════════════════════════════════════════════════════════════════ */
-function StepReview({ extracted, original, files, onUpdate, onUpdateBearing, onAddBearing, onRemoveBearing, onApplyBearings, onBack, onNext }) {
+function StepReview({ extracted, original, files, onUpdate, onUpdateBearing, onAddBearing, onRemoveBearing, onApplyBearings, onRescanBearings, rescanning, onBack, onNext }) {
   const confColor = extracted.confidence === 'high' ? '#16A34A' : extracted.confidence === 'medium' ? '#D97706' : '#DC2626'
   const canContinue = (extracted.bearings || []).length >= 3
 
@@ -1060,7 +1085,17 @@ function StepReview({ extracted, original, files, onUpdate, onUpdateBearing, onA
         title={`${extracted.bearings?.length || 0} Bearings`}
         icon={<TerrainIcon sx={{ color: NAVY, fontSize: 22 }} />}
         action={
-          <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            {files?.length > 0 && (
+              <Button
+                size="small"
+                startIcon={rescanning ? <CircularProgress size={13} sx={{ color: GOLD_DARK }} /> : <AutoFixHighIcon sx={{ fontSize: 15 }} />}
+                onClick={onRescanBearings} disabled={rescanning}
+                sx={{ fontWeight: 700 }}
+              >
+                {rescanning ? 'Re-reading…' : 'Re-scan bearings'}
+              </Button>
+            )}
             <Button size="small" startIcon={<ContentPasteIcon sx={{ fontSize: 15 }} />} onClick={() => setPasteOpen(true)} sx={{ fontWeight: 700 }}>
               Paste text
             </Button>
@@ -1493,7 +1528,10 @@ function StepResult({
   const [unit, setUnit] = useState('sqm')
   const [showLabels, setShowLabels] = useState(true)
   const [showVertices, setShowVertices] = useState(false)
+  const [showSurvey, setShowSurvey] = useState(false)
   const [burst, setBurst] = useState(false)
+
+  const survey = useMemo(() => surveyMetrics(plotted.corners, extracted.bearings), [plotted.corners, extracted.bearings])
   const mapWrapRef = useRef(null)
   const polyRef = useRef(null)
   // Captured once: did the cinematic overlay handle the reveal? (prop flips
@@ -1798,6 +1836,66 @@ function StepResult({
                     </Box>
                   ))}
                 </Stack>
+              </CardContent>
+            </GlassPanel>
+          )
+        })()}
+
+        {/* Survey Summary */}
+        {survey && (() => {
+          const angleClosed = Math.abs(survey.angleSum - survey.expectedAngleSum) < 2
+          return (
+            <GlassPanel delay={0.09}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2 }}>
+                  <StraightenIcon sx={{ fontSize: 18, color: GOLD_DARK }} />
+                  <Typography sx={{ fontWeight: 800, color: 'text.primary' }}>Survey Summary</Typography>
+                </Box>
+                <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                  {[
+                    ['Perimeter', `${fmt(survey.perimeter, 2)} m`],
+                    ['Corners', survey.corners],
+                    ['Longest side', `${fmt(survey.longest, 2)} m`],
+                    ['Shortest side', `${fmt(survey.shortest, 2)} m`],
+                  ].map(([k, v]) => (
+                    <Box key={k} sx={{ p: 1, borderRadius: 1.5, bgcolor: 'action.hover' }}>
+                      <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, color: 'text.disabled', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{k}</Typography>
+                      <Typography sx={{ fontSize: '0.88rem', fontWeight: 800, color: 'text.primary' }}>{v}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mt: 1.2 }}>
+                  {angleClosed ? <CheckCircleIcon sx={{ fontSize: 16, color: '#16A34A' }} /> : <WarningAmberIcon sx={{ fontSize: 16, color: '#D97706' }} />}
+                  <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary' }}>
+                    Interior angles sum to <strong>{fmt(survey.angleSum, 1)}°</strong> (expected {survey.expectedAngleSum}° for {survey.corners} corners).
+                  </Typography>
+                </Box>
+                <Button onClick={() => setShowSurvey(v => !v)} size="small" sx={{ mt: 0.5, fontWeight: 700, textTransform: 'none', px: 0 }}
+                        endIcon={<KeyboardArrowDownIcon sx={{ transform: showSurvey ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}>
+                  {showSurvey ? 'Hide' : 'Show'} side lengths & angles
+                </Button>
+                <Collapse in={showSurvey}>
+                  <Box sx={{ maxHeight: 240, overflow: 'auto', mt: 1, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+                    <Table size="small" stickyHeader>
+                      <TableHead>
+                        <TableRow sx={{ '& th': { bgcolor: 'action.hover', fontWeight: 800, fontSize: '0.66rem' } }}>
+                          <TableCell>Side</TableCell><TableCell align="right">Length (m)</TableCell>
+                          <TableCell>Corner</TableCell><TableCell align="right">Angle</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {survey.sides.map((s, i) => (
+                          <TableRow key={i} hover>
+                            <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{s.label}</TableCell>
+                            <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{fmt(s.length, 2)}</TableCell>
+                            <TableCell sx={{ fontWeight: 700, fontSize: '0.72rem' }}>{survey.angles[i]?.corner}</TableCell>
+                            <TableCell align="right" sx={{ fontFamily: 'monospace', fontSize: '0.72rem' }}>{survey.angles[i] ? `${fmt(survey.angles[i].deg, 1)}°` : '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </Box>
+                </Collapse>
               </CardContent>
             </GlassPanel>
           )

@@ -26,13 +26,14 @@ export function fileToDataUrl(file) {
  * @param {File|File[]} files
  * @returns {Promise<object>} the extraction result (same shape as before)
  */
-export async function scanTitleImage(files) {
+export async function scanTitleImage(files, options = {}) {
   const fileList = Array.isArray(files) ? files : [files]
   if (fileList.length === 0) throw new Error('No image provided.')
   if (fileList.length > 2) throw new Error('Upload at most two images (front + back).')
 
   const form = new FormData()
   fileList.forEach(f => form.append('images[]', f, f.name))
+  if (options.focus) form.append('focus', options.focus)
 
   try {
     const { data } = await api.post('/ai-scan-title', form, {
