@@ -41,6 +41,7 @@ import LabelOutlinedIcon from '@mui/icons-material/LabelOutlined'
 import StraightenIcon from '@mui/icons-material/Straighten'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import DownloadIcon from '@mui/icons-material/Download'
+import DescriptionIcon from '@mui/icons-material/Description'
 import CropRotateIcon from '@mui/icons-material/CropRotate'
 import { motion, AnimatePresence } from 'framer-motion'
 import { GOLD, GOLD_DARK, GOLD_LIGHT, NAVY } from '../../theme/theme'
@@ -61,6 +62,8 @@ import ImageEditDialog from '../../components/ImageEditDialog'
 import SuccessBurst from '../../components/SuccessBurst'
 import CinematicReveal from '../../components/CinematicReveal'
 import ZonalValueCard from '../../components/ZonalValueCard'
+import MarketValueCard from '../../components/MarketValueCard'
+import { openValuationReport } from '../../utils/valuationReport'
 
 const PH_CENTER = { lat: 12.8797, lng: 121.7740 }
 const GOLD_GRADIENT = `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DARK} 100%)`
@@ -1531,6 +1534,8 @@ function StepResult({
   const [showVertices, setShowVertices] = useState(false)
   const [showSurvey, setShowSurvey] = useState(false)
   const [burst, setBurst] = useState(false)
+  const [zonalSnap, setZonalSnap] = useState(null)   // {classification, perSqm, total, matchedZone}
+  const [marketSnap, setMarketSnap] = useState(null) // {perSqm, value, count, level}
 
   const survey = useMemo(() => surveyMetrics(plotted.corners, extracted.bearings), [plotted.corners, extracted.bearings])
   const mapWrapRef = useRef(null)
@@ -1621,15 +1626,24 @@ function StepResult({
     else el.requestFullscreen?.()
   }
 
-  const openStaticMap = () => {
+  const staticMapUrl = () => {
     const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY
     const pathPts = plotted.corners.map(c => `${c.lat.toFixed(6)},${c.lng.toFixed(6)}`).join('|')
     const path = `fillcolor:0xC9A24A55|color:0xC9A24Aff|weight:3|${pathPts}`
     const markers = plotted.corners.slice(0, -1)
       .map((c, i) => `&markers=size:mid|label:${i + 1}|color:0xC9A24A|${c.lat.toFixed(6)},${c.lng.toFixed(6)}`).join('')
-    const url = `https://maps.googleapis.com/maps/api/staticmap?size=640x640&scale=2&maptype=satellite&path=${path}${markers}&key=${key}`
-    window.open(url, '_blank', 'noopener')
+    return `https://maps.googleapis.com/maps/api/staticmap?size=640x420&scale=2&maptype=satellite&path=${path}${markers}&key=${key}`
   }
+  const openStaticMap = () => window.open(staticMapUrl(), '_blank', 'noopener')
+
+  const generateReport = () => openValuationReport({
+    extracted,
+    plotted,
+    area: plotted.area,
+    zonal: zonalSnap,
+    market: marketSnap,
+    staticMapUrl: staticMapUrl(),
+  })
 
   const copyVertices = () => {
     const lines = ['corner,lat,lng,dms']
@@ -1844,7 +1858,12 @@ function StepResult({
 
         {/* Estimated Zonal Value (BIR) */}
         <GlassPanel delay={0.085}>
-          <ZonalValueCard extracted={extracted} area={plotted.area} />
+          <ZonalValueCard extracted={extracted} area={plotted.area} onValuation={setZonalSnap} />
+        </GlassPanel>
+
+        {/* Estimated Market Value (comparable listings) */}
+        <GlassPanel delay={0.095}>
+          <MarketValueCard extracted={extracted} area={plotted.area} onMarket={setMarketSnap} />
         </GlassPanel>
 
         {/* Survey Summary */}
@@ -1983,6 +2002,9 @@ function StepResult({
           <CardContent>
             <Typography sx={{ fontWeight: 800, color: 'text.primary', mb: 1.2 }}>Export & Download</Typography>
             <SurveyPdfButton propertyMap={syntheticMap} transaction={null} size="medium" variant="contained" fullWidth label="Preview Survey PDFs" />
+            <Button onClick={generateReport} startIcon={<DescriptionIcon />} variant="contained" color="secondary" fullWidth sx={{ mt: 1, fontWeight: 800 }}>
+              Generate Valuation Report
+            </Button>
             <Button onClick={openStaticMap} startIcon={<DownloadIcon />} variant="outlined" fullWidth sx={{ mt: 1, fontWeight: 700 }}>
               Open map image (satellite + lot)
             </Button>

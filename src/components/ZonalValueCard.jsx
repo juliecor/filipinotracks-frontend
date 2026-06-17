@@ -52,7 +52,7 @@ const LEVEL_NOTE = {
   'province':      'Province-level match — broad estimate only',
 }
 
-export default function ZonalValueCard({ extracted, area }) {
+export default function ZonalValueCard({ extracted, area, onValuation }) {
   const province = extracted?.province || ''
   const city = extracted?.city_municipality || ''
   const barangay = extracted?.barangay || ''
@@ -97,6 +97,11 @@ export default function ZonalValueCard({ extracted, area }) {
     () => [...classifications].sort((a, b) => rankClass(a) - rankClass(b) || String(a).localeCompare(String(b))),
     [classifications]
   )
+
+  // Report the current valuation snapshot upward (for the Valuation Report)
+  useEffect(() => {
+    if (onValuation) onValuation(cls && total > 0 ? { classification: cls, perSqm, total, matchedZone } : null)
+  }, [cls, total, perSqm, matchedZone]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const Header = (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, mb: 1.4 }}>
