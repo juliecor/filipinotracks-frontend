@@ -39,6 +39,7 @@ const AdminTestimonialsPage  = lazy(() => import('./pages/admin/AdminTestimonial
 const AdminPropertyMapsPage  = lazy(() => import('./pages/admin/AdminPropertyMapsPage'))
 const AdminGisMapPage        = lazy(() => import('./pages/admin/AdminGisMapPage'))
 const AiTitleScannerPage     = lazy(() => import('./pages/admin/AiTitleScannerPage'))
+const AiZonalAssistantPage   = lazy(() => import('./pages/admin/AiZonalAssistantPage'))
 const AdminInquiriesPage     = lazy(() => import('./pages/admin/AdminInquiriesPage'))
 
 // Staff portal
@@ -123,6 +124,7 @@ function App() {
             <Route path="property-maps"       element={<AdminPropertyMapsPage />} />
             <Route path="gis-map"             element={<AdminGisMapPage />} />
             <Route path="ai-title-scanner"    element={<AiTitleScannerPage />} />
+            <Route path="zonal-assistant"     element={<AiZonalAssistantPage />} />
             <Route path="inquiries"           element={<AdminInquiriesPage />} />
             <Route path="settings"            element={<SettingsPage />} />
           </Route>

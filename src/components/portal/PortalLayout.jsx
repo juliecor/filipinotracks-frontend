@@ -20,6 +20,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment'
 import MapIcon from '@mui/icons-material/Map'
 import LayersIcon from '@mui/icons-material/Layers'
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome'
+import SupportAgentIcon from '@mui/icons-material/SupportAgent'
 import HomeIcon from '@mui/icons-material/Home'
 import StarIcon from '@mui/icons-material/Star'
 import ContactSupportRoundedIcon from '@mui/icons-material/ContactSupportRounded'
@@ -50,6 +51,7 @@ const adminNav = [
   { label: 'Property Maps',   path: '/admin/property-maps',  icon: <MapIcon /> },
   { label: 'GIS Map',         path: '/admin/gis-map',        icon: <LayersIcon /> },
   { label: 'AI Title Scanner',path: '/admin/ai-title-scanner', icon: <AutoAwesomeIcon /> },
+  { label: 'AI Zonal Assistant', path: '/admin/zonal-assistant', icon: <SupportAgentIcon /> },
   { label: 'Inquiries',       path: '/admin/inquiries',      icon: <ContactSupportRoundedIcon /> },
   { label: 'Announcements',   path: '/admin/announcements',  icon: <CampaignIcon /> },
   { label: 'Testimonials',    path: '/admin/testimonials',   icon: <StarIcon /> },
