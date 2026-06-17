@@ -57,7 +57,11 @@ export default function ZonalAssistant({ extracted, area, zonal, market, message
     setInput('')
     setBusy(true)
     try {
-      const reply = await askAssistant(next.map((m) => ({ role: m.role, content: m.content })), context)
+      // Only send the last few turns to the model — stays well under the
+      // backend's 20-message cap and keeps token usage lean. The full thread
+      // still shows on screen.
+      const recent = next.slice(-12).map((m) => ({ role: m.role, content: m.content }))
+      const reply = await askAssistant(recent, context)
       setMessages([...next, { role: 'assistant', content: reply || '…' }])
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'Sorry — I had trouble answering. Please try again.'
